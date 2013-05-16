@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>WebGL SSDO</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<script src="lib/prototype.js"></script>
+		<script src="lib/jquery-1.9.1.min.js"></script>
+		<script src="lib/three.js"></script>
+		<script src="lib/Detector.js"></script>
+		<script src="lib/TrackballControls.js"></script>
+		<script src="lib/stats.min.js"></script>
+		<script src="Shader.js"></script>
+		<script src="Light.js"></script>
+		<style>
+			body {
+				color: #000;
+				font-family: Monospace;
+				font-size: 13px;
+				text-align: center;
+				font-weight: bold;
+
+				background-color: #ffffff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			
+			#info {
+				color: #000;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="container"></div>
+		<div id="info">
+			Mouse left : rotate, middle : zoom, right, right : pan<br/>
+			
+		</div>
+	</body>
+	<script>
+		if (!Detector.webgl) Detector.addGetWebGLMessage();
+		
+		// Screen
+		var screenWidth = window.innerWidth,
+			screenHeight = window.innerHeight;
+		// Camera
+		var	viewAngle = 45,
+			aspect = screenWidth / screenHeight,
+			near = 0.1,
+			far = 1000;
+		
+		var $container, stats;
+		var camera, cameraRTT, controls, scene, renderer;
+		var cross;
+		var lights = [], lightPos = [], lightColor = [];
+		var objects = [], materials = [];
+		//var clock = new THREE.Clock();
+		var sceneScreen;
+		var rtTexture = [], rttShader = [];
+		
+		var sphereMesh;
+		var phongShader, expressiveShader, zBufferShader;
+		var geometryBufferShader;
+		
+		init();
+		animate();
+		
+		// process lights for shaders
+		function processLights() {
+			var lightsNumber = lights.length;
+			for (var i = 0 ; i < lights.length ; i++) {
+				lightPos[i] = lights[i].getPosition();
+				lightColor[i] = lights[i].getColor();
+			}
+		}
+		
+		// Initialization of the world
+		function initScene() {
+			scene = new THREE.Scene();
+			sceneScreen = new THREE.Scene();
+			//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+			
+			// lights
+			lights[0] = new Light(
+				new THREE.Vector3(300, 50, 200),
+				new THREE.Vector4(1.0, 1.0, 1.0, 1.0)
+			);
+			lights[1] = new Light(
+				new THREE.Vector3(-300, 50, 200),
+				new THREE.Vector4(1.0, 1.0, 1.0, 1.0)
+			);
+			
+			/*var pointLight = new THREE.PointLight(0xFFFFFF);
+			pointLight.position.x = -100;
+			pointLight.position.y = 50;
+			pointLight.position.z = 130;
+			scene.add(pointLight);*/
+			
+			/*{ type: "v4v", value: [ new THREE.Vector4( 0.1, 0.2, 0.3, 0.4 ), 
+                                       new THREE.Vector4( 0.4, 0.5, 0.6, 0.7 ) ] }, // Vector4 array
+			*/
+			processLights();
+			
+			// shaders
+			phongShader = new Shader();
+			phongShader.addUniform('lightPos', 'v3v', lightPos);
+			phongShader.addUniform('lightColor', 'v4v', lightColor);
+			phongShader.addUniform('matDiffuse', 'f', 0.8);
+			phongShader.addUniform('matSpecular', 'f', 0.8);
+			phongShader.addUniform('matEmissive', 'f', 0.0);
+			phongShader.addUniform('shininess', 'f', 5.0);
+			phongShader.addUniform('matDiffuseColor', 'v4', new THREE.Vector4(1.0, 0.0, 0.0, 1.0));
+			phongShader.addUniform('matSpecularColor', 'v4', new THREE.Vector4(1.0, 1.0, 1.0, 1.0));
+			phongShader.addUniform('matEmissiveColor', 'v4', new THREE.Vector4(0.0, 1.0, 0.0, 1.0));
+			phongShader.addAttribute('displacement', 'f', []);
+			phongShader.loadShader('cshader.vert', 'vertex');
+			phongShader.loadShader('cshader.frag', 'fragment');
+			
+			var phongShader2 = new Shader();
+			phongShader2.addUniform('lightPos', 'v3v', lightPos);
+			phongShader2.addUniform('lightColor', 'v4v', lightColor);
+			phongShader2.addUniform('matDiffuse', 'f', 0.8);
+			phongShader2.addUniform('matSpecular', 'f', 0.3);
+			phongShader2.addUniform('matEmissive', 'f', 0.0);
+			phongShader2.addUniform('shininess', 'f', 5.0);
+			phongShader2.addUniform('matDiffuseColor', 'v4', new THREE.Vector4(0.2, 1.0, 0.2, 1.0));
+			phongShader2.addUniform('matSpecularColor', 'v4', new THREE.Vector4(1.0, 1.0, 1.0, 1.0));
+			phongShader2.addUniform('matEmissiveColor', 'v4', new THREE.Vector4(0.0, 1.0, 0.0, 1.0));
+			phongShader2.addAttribute('displacement', 'f', []);
+			phongShader2.loadShader('cshader.vert', 'vertex');
+			phongShader2.loadShader('cshader.frag', 'fragment');
+			
+			expressiveShader = new Shader();
+			expressiveShader.addUniform('lightPos', 'v3v', lightPos);
+			expressiveShader.addUniform('lightColor', 'v4v', lightColor);
+			expressiveShader.addUniform('matDiffuse', 'f', 0.8);
+			expressiveShader.addUniform('shininess', 'f', 5.0);
+			expressiveShader.addUniform('matDiffuseColor', 'v4', new THREE.Vector4(1.0, 0.0, 0.0, 1.0));
+			expressiveShader.setShader(phongShader.getShader('vertex'), 'vertex');
+			expressiveShader.loadShader('expressive_shader.frag', 'fragment');
+			
+			zBufferShader = new Shader();
+			//zBufferShader.addUniform('texture1', 't', THREE.ImageUtils.loadTexture("textures/avatar.jpg"));
+			zBufferShader.setShader(phongShader.getShader('vertex'), 'vertex');
+			zBufferShader.loadShader('zbuffer.frag', 'fragment');
+			
+			normalsShader = new Shader();
+			normalsShader.setShader(phongShader.getShader('vertex'), 'vertex');
+			normalsShader.loadShader('normals.frag', 'fragment');
+			
+			/*geometryBufferShader = new Shader();
+			geometryBufferShader.addUniform('texture', 't', rtTexture[2]);
+			geometryBufferShader.setShader(phongShader.getShader('vertex'), 'vertex');
+			geometryBufferShader.loadShader('geometryBufferShader.frag', 'fragment');
+			*/
+			// sphere
+			var sphereMaterial = new THREE.MeshLambertMaterial({
+				color: 0xCC0000
+			});
+			
+			var radius = 50, segments = 16, rings = 16;
+			
+			var sphereGeometry = new THREE.SphereGeometry(radius, segments, rings);
+			objects[0] = new THREE.Mesh(sphereGeometry, phongShader.getMaterial());
+			materials[0] = phongShader.getMaterial();
+			scene.add(objects[0]);
+			
+			var geometry = new THREE.CylinderGeometry(0, 10,	 30, 4, 1);
+			objects[1] = new THREE.Mesh(geometry, phongShader.getMaterial());
+			objects[1].position.x = -100;
+			objects[1].position.z = -100;
+			materials[1] = phongShader.getMaterial();
+			scene.add(objects[1]);
+			
+			// off importation
+			loadOFF('models/monkey.off');
+			objects[2].position.x = 150;
+			materials[2] = phongShader2.getMaterial();
+			
+			loadOFF('models/ram.off');
+			objects[3].position.x = -80;
+			objects[3].position.z = 100;
+			objects[3].position.y = -50;
+			objects[3].rotation.x = - Math.PI / 2;
+			materials[3] = phongShader2.getMaterial();
+			// now populate the array of attributes
+			/*var vertices = sphere.geometry.vertices;
+			var values = attributes.displacement.value
+			for(var v = 0; v < vertices.length; v++) {
+				values.push(Math.random() * 30);
+			}*/
+			
+
+			// displays for the different renderings
+			var plane = new THREE.PlaneGeometry(window.innerWidth / 2, window.innerHeight / 2);
+			
+			rtTexture[0] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
+			rttShader[0] = new Shader();
+			rttShader[0].addUniform('texture', 't', rtTexture[0]);
+			rttShader[0].loadShader('textureShader.vert', 'vertex');
+			rttShader[0].loadShader('textureShader.frag', 'fragment');
+			var quad = new THREE.Mesh(plane, rttShader[0].getMaterial());
+			quad.position.z = 0;
+			quad.position.x = -window.innerWidth / 4;
+			quad.position.y = window.innerHeight / 4;
+			sceneScreen.add(quad);
+			
+			rtTexture[1] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
+			rttShader[1] = new Shader();
+			rttShader[1].addUniform('texture', 't', rtTexture[1]);
+			rttShader[1].setShader(rttShader[0].getShader('vertex'), 'vertex');
+			rttShader[1].setShader(rttShader[0].getShader('fragment'), 'fragment');
+			var quad2 = new THREE.Mesh(plane, rttShader[1].getMaterial());
+			quad2.position.z = 0;
+			quad2.position.x = +window.innerWidth / 4;
+			quad2.position.y = window.innerHeight / 4;
+			sceneScreen.add(quad2);
+			
+			rtTexture[2] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
+			rttShader[2] = new Shader();
+			rttShader[2].addUniform('texture', 't', rtTexture[2]);
+			rttShader[2].setShader(rttShader[0].getShader('vertex'), 'vertex');
+			rttShader[2].setShader(rttShader[0].getShader('fragment'), 'fragment');
+			var quad3 = new THREE.Mesh(plane, rttShader[2].getMaterial());
+			quad3.position.z = 0;
+			quad3.position.x = -window.innerWidth / 4;
+			quad3.position.y = -window.innerHeight / 4;
+			sceneScreen.add(quad3);
+			
+			rtTexture[3] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
+			rttShader[3] = new Shader();
+			rttShader[3].addUniform('texture', 't', rtTexture[3]);
+			rttShader[3].setShader(rttShader[0].getShader('vertex'), 'vertex');
+			rttShader[3].setShader(rttShader[0].getShader('fragment'), 'fragment');
+			var quad4 = new THREE.Mesh(plane, rttShader[3].getMaterial());
+			quad4.position.z = 0;
+			quad4.position.x = window.innerWidth / 4;
+			quad4.position.y = -window.innerHeight / 4;
+			sceneScreen.add(quad4);
+		}
+		
+		// Initialization
+		function init() {
+			// camera
+			camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
+			camera.position.z = 300;
+			
+			cameraRTT = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000 );
+			cameraRTT.position.z = 100;
+			
+			// controls
+			controls = new THREE.TrackballControls(camera);
+			controls.rotateSpeed = 1.0;
+			controls.zoomSpeed = 1.2;
+			controls.panSpeed = 0.8;
+			controls.noZoom = false;
+			controls.noPan = false;
+			controls.staticMoving = true;
+			controls.dynamicDampingFactor = 0.3;
+			controls.keys = [65, 83, 68];
+			controls.addEventListener('change', render);
+			
+			// world
+			initScene();
+			
+			// renderer
+			renderer = new THREE.WebGLRenderer();
+			renderer.setClearColor(0xFFFFFF, 1);
+			renderer.setSize(screenWidth, screenHeight);
+
+			// stats
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			stats.domElement.style.zIndex = 100;
+			
+			// display
+			$container = $('#container');
+			$container.append(renderer.domElement);
+			$container.append(stats.domElement);
+			
+			window.addEventListener('resize', onWindowResize, false);
+			window.addEventListener('keydown', keyDown, false);
+		}
+		
+		function keyDown(event) {
+			if (event.keyCode == 65)
+				materials[0] = phongShader.getMaterial();
+			else if (event.keyCode == 66)
+				materials[0] = expressiveShader.getMaterial();
+			render();
+		}
+	
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			controls.handleResize();
+
+			render();
+		}
+		
+		// requestAnim shim layer by Paul Irish
+		window.requestAnimFrame = (function() {
+			return	window.requestAnimationFrame       || 
+					window.webkitRequestAnimationFrame || 
+					window.mozRequestAnimationFrame    || 
+					window.oRequestAnimationFrame      || 
+					window.msRequestAnimationFrame     || 
+					function(/* function */ callback, /* DOMElement */ element){
+						window.setTimeout(callback, 1000 / 60);
+					};
+		})();
+
+		function animate() {
+			requestAnimationFrame(animate);
+			currentTime = (new Date()).getTime();
+			if (currentTime - lastTime >= interval) {
+				/*if (sphereMesh.position.z >= 0)
+					direction = -1;
+				if (sphereMesh.position.z <= -400)
+					direction = 1;
+				sphereMesh.position.z += direction * 10;*/
+				lastTime = currentTime;
+				//render();
+			}
+			controls.update();
+			stats.update();
+		}
+		
+		var direction = 1;
+		var lastTime = (new Date()).getTime();
+		var currentTime = lastTime;
+		var interval = 20;
+		
+		function render() {
+			//renderer.clear();
+			// reset materials
+			for (var i = 0 ; i < objects.length ; i++)
+				objects[i].setMaterial(materials[i]);
+			// 1st pass : normal rendering (here Phong)
+			renderer.render(scene, camera, rtTexture[0], true);
+			// 2nd pass : expressive rendering for the sphere
+			objects[0].setMaterial(expressiveShader.getMaterial());
+			renderer.render(scene, camera, rtTexture[1], true);
+			// 3rd pass : depth buffer of all the scene (all the objects)
+			for (var i = 0 ; i < objects.length ; i++)
+				objects[i].setMaterial(zBufferShader.getMaterial());
+			renderer.render(scene, camera, rtTexture[2], true);
+			// 4th pass : normals
+			for (var i = 0 ; i < objects.length ; i++)
+				objects[i].setMaterial(normalsShader.getMaterial());
+			renderer.render(scene, camera, rtTexture[3], true);
+			
+			// displays the scene
+			renderer.render(sceneScreen, cameraRTT);
+		}
+		
+		function loadOFF(fileName) {
+			$.ajax({
+				url: fileName,
+				async: false,
+				dataType: 'text',
+				context: {
+				},
+				complete: processOFF
+			});
+		}
+		
+		function processOFF(jqXHR, textStatus) {
+			var geometry = new THREE.Geometry();
+			var lines = jqXHR.responseText.split("\n");
+			if (lines[0] != "OFF")
+					alert('Not an OFF file');
+			else {
+				var scale = 50;
+				var params = lines[1].split(" ");
+				// params[0] : number of vertices
+				// params[1] : number of triangles
+				// params[2] : number of what
+				/*alert("lines : " + lines.length + "\n" +
+					"vertices : " + params[0] + "\n" + 
+					"faces : " + params[1] + "\n" + 
+					"what : " + params[2]);*/
+				for (var i = 0 ; i < params[0] ; i++) {
+					var coords = lines[2 + i].split(" ");
+					geometry.vertices.push(new THREE.Vector3(scale * coords[0], scale * coords[1], scale * coords[2]));
+				}
+				for (var i = 0 ; i < params[1] ; i++) {
+					var indexes = lines[2 + parseInt(params[0]) + i].split(" ");
+					// [0] : polygon size
+					geometry.faces.push(new THREE.Face3(indexes[1], indexes[2], indexes[3]));
+				}
+				geometry.computeFaceNormals();
+				
+				var objectID = objects.length;
+				objects[objectID] = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial());
+				scene.add(objects[objectID]);
+			}
+		}
+	</script>
+</html>
