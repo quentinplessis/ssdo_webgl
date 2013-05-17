@@ -7,10 +7,13 @@ var Shader = Class.create({
 		this.shadersHolder = {};
 		this.material = null;
     },  
-	addUniform: function(_name, _type, _value) {
+	setUniform: function(_name, _type, _value) {
 		this.uniforms[_name] = {type: _type, value: _value};
 	},
-	addAttribute: function(_name, _type, _value) {
+	getUniforms: function() {
+		return this.uniforms;
+	},
+	setAttribute: function(_name, _type, _value) {
 		this.attributes[_name] = {type: _type, value: _value};
 	},
 	setShader: function(shader, shaderType) {
@@ -39,8 +42,8 @@ var Shader = Class.create({
 		return this.shadersHolder[shaderType];
 	},
 	createMaterial: function() {
-		this.material = new THREE.ShaderMaterial({
-			uniforms: this.uniforms,
+		return this.material = new THREE.ShaderMaterial({
+			uniforms: jQuery.extend(true, {}, this.uniforms),
 			attributes: this.attributes,
 			vertexShader: this.shadersHolder['vertex'],
 			fragmentShader: this.shadersHolder['fragment']
@@ -48,7 +51,7 @@ var Shader = Class.create({
 	},
 	getMaterial: function() {
 		if (this.material == null)
-			this.createMaterial();
+			return this.createMaterial();
 		return this.material;
 	}
 }); 

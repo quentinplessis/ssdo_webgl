@@ -12,6 +12,7 @@
 		<script src="lib/stats.min.js"></script>
 		<script src="Shader.js"></script>
 		<script src="Light.js"></script>
+		<script src="DisplayManager.js"></script>
 		<style>
 			body {
 				color: #000;
@@ -63,7 +64,16 @@
 		
 		var sphereMesh;
 		var phongShader, expressiveShader, zBufferShader;
-		var geometryBufferShader;
+		var geometryBufferShader, geometryBuffer;
+		var normalsAndDepthTexture;
+		
+		var diffuseMaterialShader;
+		var displayManager;
+		
+		var diffuseMapShader, diffuseTexture;
+		
+		var ssdoDirectLightingShader, ssdoIndirectBounceShader;
+		var directLightBuffer, ssdoFinalBuffer;
 		
 		init();
 		animate();
@@ -76,6 +86,13 @@
 				lightColor[i] = lights[i].getColor();
 			}
 		}
+		
+		/*function computesUniforms(material) {
+			var uniforms = {};
+			for (var key in material) {
+				uniforms[key] = 
+			}
+		}*/
 		
 		// Initialization of the world
 		function initScene() {
@@ -92,100 +109,116 @@
 				new THREE.Vector3(-300, 50, 200),
 				new THREE.Vector4(1.0, 1.0, 1.0, 1.0)
 			);
-			
-			/*var pointLight = new THREE.PointLight(0xFFFFFF);
-			pointLight.position.x = -100;
-			pointLight.position.y = 50;
-			pointLight.position.z = 130;
-			scene.add(pointLight);*/
-			
-			/*{ type: "v4v", value: [ new THREE.Vector4( 0.1, 0.2, 0.3, 0.4 ), 
-                                       new THREE.Vector4( 0.4, 0.5, 0.6, 0.7 ) ] }, // Vector4 array
-			*/
 			processLights();
 			
 			// shaders
 			phongShader = new Shader();
-			phongShader.addUniform('lightPos', 'v3v', lightPos);
-			phongShader.addUniform('lightColor', 'v4v', lightColor);
-			phongShader.addUniform('matDiffuse', 'f', 0.8);
-			phongShader.addUniform('matSpecular', 'f', 0.8);
-			phongShader.addUniform('matEmissive', 'f', 0.0);
-			phongShader.addUniform('shininess', 'f', 5.0);
-			phongShader.addUniform('matDiffuseColor', 'v4', new THREE.Vector4(1.0, 0.0, 0.0, 1.0));
-			phongShader.addUniform('matSpecularColor', 'v4', new THREE.Vector4(1.0, 1.0, 1.0, 1.0));
-			phongShader.addUniform('matEmissiveColor', 'v4', new THREE.Vector4(0.0, 1.0, 0.0, 1.0));
-			phongShader.addAttribute('displacement', 'f', []);
-			phongShader.loadShader('cshader.vert', 'vertex');
-			phongShader.loadShader('cshader.frag', 'fragment');
-			
-			var phongShader2 = new Shader();
-			phongShader2.addUniform('lightPos', 'v3v', lightPos);
-			phongShader2.addUniform('lightColor', 'v4v', lightColor);
-			phongShader2.addUniform('matDiffuse', 'f', 0.8);
-			phongShader2.addUniform('matSpecular', 'f', 0.3);
-			phongShader2.addUniform('matEmissive', 'f', 0.0);
-			phongShader2.addUniform('shininess', 'f', 5.0);
-			phongShader2.addUniform('matDiffuseColor', 'v4', new THREE.Vector4(0.2, 1.0, 0.2, 1.0));
-			phongShader2.addUniform('matSpecularColor', 'v4', new THREE.Vector4(1.0, 1.0, 1.0, 1.0));
-			phongShader2.addUniform('matEmissiveColor', 'v4', new THREE.Vector4(0.0, 1.0, 0.0, 1.0));
-			phongShader2.addAttribute('displacement', 'f', []);
-			phongShader2.loadShader('cshader.vert', 'vertex');
-			phongShader2.loadShader('cshader.frag', 'fragment');
+			phongShader.setUniform('lightPos', 'v3v', lightPos);
+			phongShader.setUniform('lightColor', 'v4v', lightColor);
+			phongShader.setAttribute('displacement', 'f', []);
+			phongShader.loadShader('shaders/default.vert', 'vertex');
+			phongShader.loadShader('shaders/phong.frag', 'fragment');
 			
 			expressiveShader = new Shader();
-			expressiveShader.addUniform('lightPos', 'v3v', lightPos);
-			expressiveShader.addUniform('lightColor', 'v4v', lightColor);
-			expressiveShader.addUniform('matDiffuse', 'f', 0.8);
-			expressiveShader.addUniform('shininess', 'f', 5.0);
-			expressiveShader.addUniform('matDiffuseColor', 'v4', new THREE.Vector4(1.0, 0.0, 0.0, 1.0));
+			expressiveShader.setUniform('lightPos', 'v3v', lightPos);
+			expressiveShader.setUniform('lightColor', 'v4v', lightColor);
 			expressiveShader.setShader(phongShader.getShader('vertex'), 'vertex');
-			expressiveShader.loadShader('expressive_shader.frag', 'fragment');
+			expressiveShader.loadShader('shaders/expressive.frag', 'fragment');
 			
-			zBufferShader = new Shader();
-			//zBufferShader.addUniform('texture1', 't', THREE.ImageUtils.loadTexture("textures/avatar.jpg"));
-			zBufferShader.setShader(phongShader.getShader('vertex'), 'vertex');
-			zBufferShader.loadShader('zbuffer.frag', 'fragment');
+			//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
+			//magFilter: THREE.LinearFilter,  // we want nice filtering
+			//wrapS:THREE.RepeatWrapping,
+			//wrapT:THREE.RepeatWrapping,
 			
-			normalsShader = new Shader();
-			normalsShader.setShader(phongShader.getShader('vertex'), 'vertex');
-			normalsShader.loadShader('normals.frag', 'fragment');
+			var options = {
+				minFilter: THREE.LinearFilter,
+				magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat,
+				//type: THREE.FloatType
+			};
 			
-			/*geometryBufferShader = new Shader();
-			geometryBufferShader.addUniform('texture', 't', rtTexture[2]);
-			geometryBufferShader.setShader(phongShader.getShader('vertex'), 'vertex');
-			geometryBufferShader.loadShader('geometryBufferShader.frag', 'fragment');
-			*/
+			/*geometryBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+			geometryBufferShader = new Shader();
+			//geometryBufferShader.addUniform('zBuffer', 't', geometryBuffer);
+			//geometryBufferShader.addAttribute('test', 'f', 0.0);
+			geometryBufferShader.loadShader('geometryBufferShader.vert', 'vertex');
+			geometryBufferShader.loadShader('geometryBufferShader.frag', 'fragment');*/
+			
+			normalsAndDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+			normalsAndDepthShader = new Shader();
+			normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
+			normalsAndDepthShader.loadShader('shaders/computesNormalsDepth.frag', 'fragment');
+			
+			diffuseMaterialShader = new Shader();
+			diffuseMaterialShader.setUniform('lightPos', 'v3v', lightPos);
+			diffuseMaterialShader.setUniform('lightColor', 'v4v', lightColor);
+			diffuseMaterialShader.loadShader('shaders/default.vert', 'vertex');
+			diffuseMaterialShader.loadShader('shaders/diffuseMaterial.frag', 'fragment');
+			
+			diffuseMapShader = new Shader();
+			diffuseMapShader.loadShader('shaders/default.vert', 'vertex');
+			diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
+			
+			ssdoDirectLightingShader = new Shader();
+			ssdoDirectLightingShader.loadShader('shaders/texture.vert', 'vertex');
+			ssdoDirectLightingShader.loadShader('shaders/SSDODirectLightingShader.frag', 'fragment');
+			
+			ssdoDirectLightingShader = new Shader();
+			//ssdoDirectLightingShader
+			ssdoDirectLightingShader.loadShader('shaders/texture.vert', 'vertex');
+			ssdoDirectLightingShader.loadShader('shaders/SSDODirectLighting.frag', 'fragment');
+			
+			ssdoIndirectBounceShader = new Shader();
+			ssdoIndirectBounceShader.loadShader('shaders/texture.vert', 'vertex');
+			ssdoIndirectBounceShader.loadShader('shaders/SSDOIndirectBounce.frag', 'fragment');
+			ssdoIndirectBounceShader.setUniform('directLightBuffer', 't', directLightBuffer);
+			
 			// sphere
 			var sphereMaterial = new THREE.MeshLambertMaterial({
 				color: 0xCC0000
 			});
-			
 			var radius = 50, segments = 16, rings = 16;
 			
 			var sphereGeometry = new THREE.SphereGeometry(radius, segments, rings);
-			objects[0] = new THREE.Mesh(sphereGeometry, phongShader.getMaterial());
-			materials[0] = phongShader.getMaterial();
+			objects[0] = new THREE.Mesh(sphereGeometry);
+			materials[0] = [];
+			materials[0]['matDiffuse'] = 0.8;
+			materials[0]['matSpecular'] = 0.8;
+			materials[0]['matEmissive'] = 0.0;
+			materials[0]['shininess'] = 5.0;
+			materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
+			materials[0]['matSpecularColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
+			materials[0]['matEmissiveColor'] = new THREE.Vector4(0.0, 1.0, 0.0, 1.0);
 			scene.add(objects[0]);
 			
-			var geometry = new THREE.CylinderGeometry(0, 10,	 30, 4, 1);
-			objects[1] = new THREE.Mesh(geometry, phongShader.getMaterial());
+			var geometry = new THREE.CylinderGeometry(0, 10, 30, 4, 1);
+			objects[1] = new THREE.Mesh(geometry);
 			objects[1].position.x = -100;
 			objects[1].position.z = -100;
-			materials[1] = phongShader.getMaterial();
+			materials[1] = materials[0];
 			scene.add(objects[1]);
 			
 			// off importation
 			loadOFF('models/monkey.off');
 			objects[2].position.x = 150;
-			materials[2] = phongShader2.getMaterial();
+			materials[2] = [];
+			materials[2]['matDiffuse'] = 0.8;
+			materials[2]['matSpecular'] = 0.3;
+			materials[2]['matEmissive'] = 0.0;
+			materials[2]['shininess'] = 5.0;
+			materials[2]['matDiffuseColor'] = new THREE.Vector4(0.2, 1.0, 0.2, 1.0);
+			materials[2]['matSpecularColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
+			materials[2]['matEmissiveColor'] = new THREE.Vector4(0.0, 1.0, 0.0, 1.0);
+			scene.add(objects[2]);
 			
 			loadOFF('models/ram.off');
 			objects[3].position.x = -80;
 			objects[3].position.z = 100;
 			objects[3].position.y = -50;
 			objects[3].rotation.x = - Math.PI / 2;
-			materials[3] = phongShader2.getMaterial();
+			materials[3] = jQuery.extend(true, {}, materials[2]);
+			materials[3]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.0, 0.5, 1.0);
+			scene.add(objects[3]);
 			// now populate the array of attributes
 			/*var vertices = sphere.geometry.vertices;
 			var values = attributes.displacement.value
@@ -195,51 +228,36 @@
 			
 
 			// displays for the different renderings
+			var options2 = {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat};
+			rtTexture[0] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options2);
+			rtTexture[1] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options2);
+			rtTexture[2] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options2);
+			diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options2);
+			directLightBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options2);
+			ssdoFinalBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options2);
+			
+			displayManager = new DisplayManager(sceneScreen, {type: 'GRID', cols: 3, rows: 3});
+			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepth.frag');
+			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayNormals.frag');
+			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepthNormals.frag');
+			displayManager.addSimpleTexture(rtTexture[0]);
+			displayManager.addSimpleTexture(rtTexture[1]);
+			displayManager.addSimpleTexture(rtTexture[2]);
+			displayManager.addSimpleTexture(diffuseTexture);
+			displayManager.addSimpleTexture(directLightBuffer);
+			displayManager.addSimpleTexture(ssdoFinalBuffer);
+			displayManager.organize();
+			
 			var plane = new THREE.PlaneGeometry(window.innerWidth / 2, window.innerHeight / 2);
 			
-			rtTexture[0] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
-			rttShader[0] = new Shader();
-			rttShader[0].addUniform('texture', 't', rtTexture[0]);
-			rttShader[0].loadShader('textureShader.vert', 'vertex');
-			rttShader[0].loadShader('textureShader.frag', 'fragment');
-			var quad = new THREE.Mesh(plane, rttShader[0].getMaterial());
-			quad.position.z = 0;
-			quad.position.x = -window.innerWidth / 4;
-			quad.position.y = window.innerHeight / 4;
-			sceneScreen.add(quad);
-			
-			rtTexture[1] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
-			rttShader[1] = new Shader();
-			rttShader[1].addUniform('texture', 't', rtTexture[1]);
-			rttShader[1].setShader(rttShader[0].getShader('vertex'), 'vertex');
-			rttShader[1].setShader(rttShader[0].getShader('fragment'), 'fragment');
-			var quad2 = new THREE.Mesh(plane, rttShader[1].getMaterial());
-			quad2.position.z = 0;
-			quad2.position.x = +window.innerWidth / 4;
-			quad2.position.y = window.innerHeight / 4;
-			sceneScreen.add(quad2);
-			
-			rtTexture[2] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
-			rttShader[2] = new Shader();
-			rttShader[2].addUniform('texture', 't', rtTexture[2]);
-			rttShader[2].setShader(rttShader[0].getShader('vertex'), 'vertex');
-			rttShader[2].setShader(rttShader[0].getShader('fragment'), 'fragment');
-			var quad3 = new THREE.Mesh(plane, rttShader[2].getMaterial());
-			quad3.position.z = 0;
-			quad3.position.x = -window.innerWidth / 4;
-			quad3.position.y = -window.innerHeight / 4;
-			sceneScreen.add(quad3);
-			
-			rtTexture[3] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBFormat});
-			rttShader[3] = new Shader();
-			rttShader[3].addUniform('texture', 't', rtTexture[3]);
-			rttShader[3].setShader(rttShader[0].getShader('vertex'), 'vertex');
-			rttShader[3].setShader(rttShader[0].getShader('fragment'), 'fragment');
-			var quad4 = new THREE.Mesh(plane, rttShader[3].getMaterial());
-			quad4.position.z = 0;
-			quad4.position.x = window.innerWidth / 4;
-			quad4.position.y = -window.innerHeight / 4;
-			sceneScreen.add(quad4);
+			/*var plane0 = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
+			var rttS = new Shader();
+			rttS.addUniform('texture', 't', normalsAndDepthTexture);
+			rttS.loadShader('processingTextureShader.vert', 'vertex');
+			rttS.loadShader('processingTextureShader.frag', 'fragment');
+			var quad0 = new THREE.Mesh(plane0, rttS.getMaterial());
+			quad0.position.z = 0;
+			sceneScreen.add(quad0);*/
 		}
 		
 		// Initialization
@@ -248,7 +266,7 @@
 			camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
 			camera.position.z = 300;
 			
-			cameraRTT = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000 );
+			cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 			cameraRTT.position.z = 100;
 			
 			// controls
@@ -287,10 +305,12 @@
 		}
 		
 		function keyDown(event) {
-			if (event.keyCode == 65)
-				materials[0] = phongShader.getMaterial();
-			else if (event.keyCode == 66)
-				materials[0] = expressiveShader.getMaterial();
+			if (event.keyCode == 96) {
+				displayManager.changeMode({type: 'GRID', cols: 2, rows: 3});
+			}
+			else if (event.keyCode >= 97 && event.keyCode <= 105) {
+				displayManager.changeMode({type: 'SINGLE', id: (event.keyCode - 97)});
+			}
 			render();
 		}
 	
@@ -338,23 +358,63 @@
 		var interval = 20;
 		
 		function render() {
-			//renderer.clear();
-			// reset materials
+			// 1st rendering : computes depth and normals
 			for (var i = 0 ; i < objects.length ; i++)
-				objects[i].setMaterial(materials[i]);
-			// 1st pass : normal rendering (here Phong)
+				objects[i].setMaterial(normalsAndDepthShader.getMaterial());
+			renderer.render(scene, camera, normalsAndDepthTexture, true);
+			
+			// 2nd rendering : complete rendering
+			for (var i = 0 ; i < objects.length ; i++) {
+				phongShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+				phongShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+				phongShader.setUniform('matEmissive', 'f', materials[i]['matEmissive']);
+				phongShader.setUniform('shininess', 'f', materials[i]['shininess']);
+				phongShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+				phongShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+				phongShader.setUniform('matEmissiveColor', 'v4', materials[i]['matEmissiveColor']);
+				objects[i].setMaterial(phongShader.createMaterial());
+			}
 			renderer.render(scene, camera, rtTexture[0], true);
-			// 2nd pass : expressive rendering for the sphere
+			
+			// 3rd rendering : expressive rendering for the sphere
+			expressiveShader.setUniform('matDiffuse', 'f', materials[0]['matDiffuse']);
+			expressiveShader.setUniform('shininess', 'f', materials[0]['shininess']);
+			expressiveShader.setUniform('matDiffuseColor', 'v4', materials[0]['matDiffuseColor']);
 			objects[0].setMaterial(expressiveShader.getMaterial());
 			renderer.render(scene, camera, rtTexture[1], true);
-			// 3rd pass : depth buffer of all the scene (all the objects)
-			for (var i = 0 ; i < objects.length ; i++)
-				objects[i].setMaterial(zBufferShader.getMaterial());
+			
+			// 4th rendering : diffuse material rendering
+			for (var i = 0 ; i < objects.length ; i++) {
+				diffuseMaterialShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+				diffuseMaterialShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+				objects[i].setMaterial(diffuseMaterialShader.createMaterial());
+			}
 			renderer.render(scene, camera, rtTexture[2], true);
-			// 4th pass : normals
-			for (var i = 0 ; i < objects.length ; i++)
-				objects[i].setMaterial(normalsShader.getMaterial());
-			renderer.render(scene, camera, rtTexture[3], true);
+			
+			// 5th rendering : diffuse map rendering
+			for (var i = 0 ; i < objects.length ; i++) {
+				diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+				diffuseMapShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+				objects[i].setMaterial(diffuseMapShader.createMaterial());
+			}
+			renderer.render(scene, camera, diffuseTexture, true);
+			
+///////////////
+			// ssdo 1st pass
+			for (var i = 0 ; i < objects.length ; i++) {
+				ssdoDirectLightingShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+				ssdoDirectLightingShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+				objects[i].setMaterial(ssdoDirectLightingShader.createMaterial());
+			}
+			renderer.render(scene, camera, directLightBuffer, true);
+			
+			// ssdo 2nd pass
+			for (var i = 0 ; i < objects.length ; i++) {
+				ssdoIndirectBounceShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+				ssdoIndirectBounceShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+				objects[i].setMaterial(ssdoIndirectBounceShader.createMaterial());
+			}
+			renderer.render(scene, camera, ssdoFinalBuffer, true);
 			
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
