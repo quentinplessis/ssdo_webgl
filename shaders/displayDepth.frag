@@ -10,7 +10,13 @@ varying vec3 N;
 
 varying vec2 vUv;
 
+float linearizeDepth(float z) {
+	float n = 0.1;
+	float f = 100.0;
+	return (2.0 * n) / (f + n - z * (f  -n));
+}
+
 void main() {
-	vec4 color = texture2D(texture, vUv);
-	gl_FragColor = vec4(color.r, color.r, color.r, 1.0);
+	float color = linearizeDepth((texture2D(texture, vUv)).a);
+	gl_FragColor = vec4(color, color, color, 1.0);
 }

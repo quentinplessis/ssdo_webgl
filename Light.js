@@ -1,9 +1,10 @@
 
 var Light = Class.create({
     // Constructor
-    initialize: function(position, color) {  
+    initialize: function(position, color, intensity) {  
         this.position = position;
 		this.color = color;
+		this.intensity = intensity;
     },
 	setPosition: function(position) {
 		this.position = position;
@@ -16,5 +17,11 @@ var Light = Class.create({
 	},
 	getColor: function() {
 		return this.color;
+	},
+	setIntensity: function(intensity) {
+		this.intensity = intensity;
+	},
+	getIntensity: function() {
+		return this.intensity;
 	}
 });

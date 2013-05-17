@@ -2,9 +2,10 @@
 precision highp float;
 #endif
 
-// Light properties
-uniform vec3 lightPos[2];
-uniform vec4 lightColor[2];
+// lights properties
+uniform vec3 lightsPos[2];
+uniform vec4 lightsColor[2];
+uniform float lightsIntensity[2];
 
 // Material properties
 uniform float matDiffuse;
@@ -22,7 +23,7 @@ void main (void) {
 	vec3 n = normalize(N);
 	
 	for (int i = 0 ; i < 2 ; i++) {
-		vec3 l = normalize(lightPos[i] - p);
+		vec3 l = normalize(lightsPos[i] - p);
 		vec3 r = reflect(-l, n);
 		vec3 v = normalize(-p);
 		float diffuse = max(dot(l, n), 0.0);
@@ -32,9 +33,9 @@ void main (void) {
 		
 		if (!(dot(n, v) < 0.25 && dot(n, v) > -0.25)) {
 			if (spec > 0.5)
-				gl_FragColor += lightColor[i];
+				gl_FragColor += lightsColor[i] * lightsIntensity[i];
 			else
-				gl_FragColor += matDiffuse * matDiffuseColor * lightColor[i];
+				gl_FragColor += matDiffuse * matDiffuseColor * lightsColor[i] * lightsIntensity[i];
 		}
 	}
 }

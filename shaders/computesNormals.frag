@@ -7,5 +7,5 @@ varying vec4 P;
 varying vec3 N;
 
 void main() {
-	gl_FragData[0] = vec4(N, gl_FragCoord.z);
+	gl_FragData[0] = vec4(N, ;
 }

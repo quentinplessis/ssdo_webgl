@@ -8,7 +8,7 @@ var DisplayManager = Class.create({
 		this.quads = [];
     },
 	addDisplay: function(display) {
-		this.displays.add(display);
+		this.displays.push(display);
 	},
 	addSimpleTexture: function(texture) {
 		var shader = new Shader();
