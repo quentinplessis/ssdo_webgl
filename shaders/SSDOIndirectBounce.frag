@@ -56,7 +56,6 @@ void main() {
 	//samplesVisibility[i] = true if sample i is not occulted
 	bool samplesVisibility[numberOfSamples];
 
-
 	//Generate numberOfSamples random directions and random samples (uniform distribution)
 	//The samples are in the hemisphere oriented by the normal vector	
 	for(int i = 0 ; i<numberOfSamples ; i++)

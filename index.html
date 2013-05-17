@@ -429,7 +429,7 @@
 			
 ///////////////
 			// ssdo 1st pass
-			/*for (var i = 0 ; i < objects.length ; i++) {
+			for (var i = 0 ; i < objects.length ; i++) {
 				//ssdoDirectLightingShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
 				//ssdoDirectLightingShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
 				objects[i].setMaterial(ssdoDirectLightingShader.createMaterial());
@@ -442,7 +442,7 @@
 				//ssdoIndirectBounceShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
 				objects[i].setMaterial(ssdoIndirectBounceShader.createMaterial());
 			}
-			renderer.render(scene, camera, ssdoFinalBuffer, true);*/
+			renderer.render(scene, camera, ssdoFinalBuffer, true);
 			
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);

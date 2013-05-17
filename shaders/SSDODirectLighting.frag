@@ -2,6 +2,7 @@
 precision highp float;
 #endif
 
+
 // input buffers
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
@@ -77,7 +78,6 @@ void main()
 	//samplesVisibility[i] = true if sample i is not occulted
 	bool samplesVisibility[numberOfSamples];
 
-
 	//Generate numberOfSamples random directions and random samples (uniform distribution)
 	//The samples are in the hemisphere oriented by the normal vector	
 	for(int i = 0 ; i<numberOfSamples ; i++)
@@ -109,7 +109,6 @@ void main()
 		vec3 sampleProjectionOnSurface = texture2D(positionsBuffer, uv).xyz;
 		
 		float distanceCameraSampleProjection = length(cameraPosition-sampleProjectionOnSurface);
-
 		if(distanceCameraSample > distanceCameraSampleProjection) //if the sample is inside the surface it is an occluder
 		{
 			samplesVisibility[i] = false; //The sample is an occluder
