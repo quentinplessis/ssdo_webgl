@@ -79,7 +79,7 @@
 		
 		var coordsTexture, coordsShader;
 		
-		var ssdoScene;
+		var ssdoScene, ssdoQuad;
 		
 		init();
 		animate();
@@ -162,7 +162,7 @@
 			// SSDO required inputs
 			coordsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 			coordsShader = new Shader();
-			coordsShader.loadShader('shaders/default.vert', 'vertex');
+			coordsShader.loadShader('shaders/computesCoords.vert', 'vertex');
 			coordsShader.loadShader('shaders/computesCoords.frag', 'fragment');
 			
 			diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -201,10 +201,10 @@
 			ssdoIndirectBounceShader.setUniform('projectionM', 'mat4', camera.projectionMatrix);
 			//ssdoIndirectBounceShader.setUniform('cameraPosition', 'vec3', camera.position);
 			
-			/*ssdoScene = new THREE.Scene();
+			ssdoScene = new THREE.Scene();
 			var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
-			var quad = new THREE.Mesh(plane, ssdoDirectLightingShader.getMaterial());
-			ssdoScene.add(quad);*/
+			ssdoQuad = new THREE.Mesh(plane);
+			ssdoScene.add(ssdoQuad);
 			
 			// sphere
 			var sphereMaterial = new THREE.MeshLambertMaterial({
@@ -430,20 +430,22 @@
 			
 ///////////////
 			// ssdo 1st pass
-			for (var i = 0 ; i < objects.length ; i++) {
+			/*for (var i = 0 ; i < objects.length ; i++) {
 				//ssdoDirectLightingShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
 				//ssdoDirectLightingShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
 				objects[i].setMaterial(ssdoDirectLightingShader.createMaterial());
-			}
-			renderer.render(scene, camera, directLightBuffer, true);
+			}*/
+			ssdoQuad.setMaterial(ssdoDirectLightingShader.getMaterial());
+			renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 			
 			// ssdo 2nd pass
-			for (var i = 0 ; i < objects.length ; i++) {
+			/*for (var i = 0 ; i < objects.length ; i++) {
 				//ssdoIndirectBounceShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
 				//ssdoIndirectBounceShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
 				objects[i].setMaterial(ssdoIndirectBounceShader.createMaterial());
-			}
-			renderer.render(scene, camera, ssdoFinalBuffer, true);
+			}*/
+			ssdoQuad.setMaterial(ssdoIndirectBounceShader.getMaterial());
+			renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 			
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
