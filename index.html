@@ -67,6 +67,8 @@
 		var geometryBufferShader, geometryBuffer;
 		var normalsAndDepthTexture;
 		
+		var normalsAndDepthTexture2;
+		
 		var diffuseMaterialShader;
 		var displayManager;
 		
@@ -117,7 +119,7 @@
 				1.0
 			);
 			processLights();
-			
+			 
 			// shaders
 			phongShader = new Shader();
 			phongShader.setUniform('lightsPos', 'v3v', lightsPos);
@@ -181,9 +183,8 @@
 			ssdoDirectLightingShader.setUniform('lightsPos', 'v3v', lightsPos);
 			ssdoDirectLightingShader.setUniform('lightsColor', 'v4v', lightsColor);
 			ssdoDirectLightingShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-			//ssdoDirectLightingShader.setUniform('cameraPosition', 'vec3', camera.position);
-			//ssdoDirectLightingShader.setUniform('modelViewMatrix', 'mat4', window.innerHeight);
 			ssdoDirectLightingShader.setUniform('projectionM', 'mat4', camera.projectionMatrix);
+			//ssdoDirectLightingShader.setUniform('cameraPosition', 'vec3', camera.position);
 			
 			ssdoIndirectBounceShader = new Shader();
 			ssdoIndirectBounceShader.loadShader('shaders/ssdo.vert', 'vertex');

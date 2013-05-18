@@ -19,13 +19,13 @@ float linearizeDepth(float z) {
 void main() {
 	// the normal is contained in the RGB channels and the depth in the A channel
 	vec4 data = texture2D(texture, vUv);
-	float depth = linearizeDepth(data.a);
-	vec3 coloredNormal = (data.rgb) * 2.0;
 	
 	if (vUv.x < 0.5) {
+		float depth = linearizeDepth(data.a);
 		gl_FragColor = vec4(depth, depth, depth, 1.0);
 	}
 	else {
+		vec3 coloredNormal = (1.0 + data.rgb) * 0.5;
 		gl_FragColor = vec4(coloredNormal, 1.0);
 	}
 }

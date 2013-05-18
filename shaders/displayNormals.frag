@@ -11,6 +11,6 @@ varying vec3 N;
 varying vec2 vUv;
 
 void main() {
-	vec3 color = ((texture2D(texture, vUv)).rgb) * 2.0;
+	vec3 color = (1.0 + (texture2D(texture, vUv)).rgb) * 0.5;
 	gl_FragColor = vec4(color, 1.0);
 }

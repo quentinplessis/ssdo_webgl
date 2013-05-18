@@ -2,7 +2,6 @@
 precision highp float;
 #endif
 
-
 // input buffers
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
