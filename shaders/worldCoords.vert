@@ -6,7 +6,16 @@ varying vec4 P;
 varying vec3 N;
 
 void main() {
-	P = vec4(position, 1.0);
+	//P = modelViewMatrix * vec4(position, 1.0);
+	P = modelMatrix * vec4(position, 1.0);
+	// multiply by : 
+	// modelMatrix to go from model space to world space
+	// viewMatrix = cameraViewInverse to go from world space to camera space
+	// modelViewMatrix = viewMatrix * modelMatrix
+		// model space to camera space
+	// projectionMatrix to go from cam space to screen space
+	
+	//N = normalMatrix * normal;
 	N = normalMatrix * normal;
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);

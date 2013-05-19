@@ -51,15 +51,15 @@
 		var	viewAngle = 45,
 			aspect = screenWidth / screenHeight,
 			near = 0.1,
-			far = 1000;
+			far = 10000;
 		
 		var $container, stats;
-		var camera, cameraRTT, controls, scene, renderer;
-		var cross;
+		var camera, cameraRTT, controls, scene, sceneScreen, renderer;
 		var lights = [], lightsPos = [], lightsColor = [], lightsIntensity = [];
+		var lightsCameras = [], lightsView = [], lightsProj = [], lightsRot = [];
+		var shadowMaps = [];
 		var objects = [], materials = [];
-		//var clock = new THREE.Clock();
-		var sceneScreen;
+	
 		var rtTexture = [], rttShader = [];
 		
 		var sphereMesh;
@@ -81,6 +81,20 @@
 		
 		var ssdoScene, ssdoQuad;
 		
+		var shadowMapsResolution = 256;
+		var hardShadowsShader, hardShadowsTexture;
+		
+		var worldMatrixInverse;
+		
+		var options = {
+				minFilter: THREE.LinearFilter,
+				//magFilter: THREE.NearestFilter,
+				format: THREE.RGBAFormat,
+				type: THREE.FloatType
+			};
+		
+		//aspect = 1.0;
+		
 		init();
 		animate();
 		
@@ -91,6 +105,16 @@
 				lightsPos[i] = lights[i].getPosition();
 				lightsColor[i] = lights[i].getColor();
 				lightsIntensity[i] = lights[i].getIntensity();
+				
+				lightsCameras[i] = new THREE.PerspectiveCamera(70.0, 1.0, 0.1, 1000.0);
+				lightsCameras[i].position = lightsPos[i];
+				lightsCameras[i].lookAt(lights[i].getLookAt()); 
+				
+				lightsView[i] = lightsCameras[i].matrixWorldInverse;
+				lightsProj[i] = lightsCameras[i].projectionMatrix;
+				lightsRot[i] = lightsCameras[i].matrixRotationWorld;
+			
+				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			}
 		}
 		
@@ -109,12 +133,12 @@
 			
 			// lights
 			lights[0] = new Light(
-				new THREE.Vector3(300, 50, 200),
+				new THREE.Vector3(250, 200, 180),
 				new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
 				1.0
 			);
 			lights[1] = new Light(
-				new THREE.Vector3(-300, 50, 200),
+				new THREE.Vector3(-200, 400, 150),
 				new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
 				1.0
 			);
@@ -140,13 +164,6 @@
 			//wrapS:THREE.RepeatWrapping,
 			//wrapT:THREE.RepeatWrapping,
 			
-			var options = {
-				minFilter: THREE.LinearFilter,
-				magFilter: THREE.NearestFilter,
-				format: THREE.RGBAFormat,
-				type: THREE.FloatType
-			};
-			
 			normalsAndDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 			normalsAndDepthShader = new Shader();
 			normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
@@ -169,6 +186,35 @@
 			diffuseMapShader = new Shader();
 			diffuseMapShader.loadShader('shaders/default.vert', 'vertex');
 			diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
+			
+
+			// shadow mapping
+			shadowMapsShader = new Shader();
+			shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
+			shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
+			var lightProjMatInverse = new THREE.Matrix4();
+			lightProjMatInverse.getInverse(lightsProj[0]);
+			shadowMapsShader.setUniform('lightsProj', 'm4v', lightsProj);
+			
+			
+			// hard shadows
+			hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+			hardShadowsShader = new Shader();
+			hardShadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
+			hardShadowsShader.loadShader('shaders/hardShadows.frag', 'fragment');
+			hardShadowsShader.setUniform('shadowMaps', 'vt', shadowMaps);
+			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
+			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			hardShadowsShader.setUniform('lightsView', 'm4v', lightsView);
+			hardShadowsShader.setUniform('lightsProj', 'm4v', lightsProj);
+			hardShadowsShader.setUniform('lightsRot', 'm3v', lightsRot);
+			hardShadowsShader.setUniform('lightsPos', 'v3v', lightsPos);
+			hardShadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
+			hardShadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+			hardShadowsShader.setUniform('PI', 'f', Math.PI);
+			//hardShadowsShader.setUniform('worldMatrix', 'm4', camera.matrixWorldInverse);
+			hardShadowsShader.setUniform('screenWidth', 'f', window.innerWidth);
+			hardShadowsShader.setUniform('screenHeight', 'f', window.innerHeight);
 			
 			// SSDO shaders
 			directLightBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -228,6 +274,7 @@
 			objects[1] = new THREE.Mesh(geometry);
 			objects[1].position.x = -100;
 			objects[1].position.z = -100;
+			objects[1].position.y = -50;
 			materials[1] = materials[0];
 			scene.add(objects[1]);
 			
@@ -253,6 +300,13 @@
 			materials[3]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.0, 0.5, 1.0);
 			scene.add(objects[3]);
 			
+			loadOFF('models/ground.off', 200);
+			objects[4].position.y = -100;
+			objects[4].rotation.x = - Math.PI / 2;
+			materials[4] = jQuery.extend(true, {}, materials[2]);
+			materials[4]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.5, 0.5, 1.0);
+			scene.add(objects[4]);
+			
 			//phongShader.setAttribute('displacement', 'f', []);
 			// now populate the array of attributes
 			/*var vertices = sphere.geometry.vertices;
@@ -266,16 +320,19 @@
 			rtTexture[1] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 			rtTexture[2] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 			
-			displayManager = new DisplayManager(sceneScreen, {type: 'GRID', cols: 3, rows: 3});
-			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepth.frag');
-			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayNormals.frag');
+			displayManager = new DisplayManager(sceneScreen, {type: 'GRID', cols: 2, rows: 3});
+			//displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepth.frag');
+			//displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayNormals.frag');
 			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepthNormals.frag');
 			displayManager.addSimpleTexture(rtTexture[0]);
-			displayManager.addSimpleTexture(rtTexture[1]);
-			displayManager.addSimpleTexture(rtTexture[2]);
-			displayManager.addSimpleTexture(diffuseTexture);
-			displayManager.addSimpleTexture(directLightBuffer);
-			displayManager.addSimpleTexture(ssdoFinalBuffer);
+			//displayManager.addSimpleTexture(rtTexture[1]);
+			//displayManager.addSimpleTexture(rtTexture[2]);
+			//displayManager.addSimpleTexture(diffuseTexture);
+			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag');
+			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag');
+			displayManager.addSimpleTexture(hardShadowsTexture);
+			//displayManager.addSimpleTexture(directLightBuffer);
+			//displayManager.addSimpleTexture(ssdoFinalBuffer);
 			displayManager.organize();
 		}
 		
@@ -283,7 +340,10 @@
 		function init() {
 			// camera
 			camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
+			//camera.position.x = 200;
+			camera.position.y = 200;
 			camera.position.z = 300;
+			
 			
 			cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 			cameraRTT.position.z = 100;
@@ -325,7 +385,7 @@
 		
 		function keyDown(event) {
 			if (event.keyCode == 96) {
-				displayManager.changeMode({type: 'GRID', cols: 3, rows: 3});
+				displayManager.changeMode({type: 'GRID', cols: 2, rows: 3});
 			}
 			else if (event.keyCode >= 97 && event.keyCode <= 105) {
 				displayManager.changeMode({type: 'SINGLE', id: (event.keyCode - 97)});
@@ -355,26 +415,27 @@
 					};
 		})();
 
-		function animate() {
-			requestAnimationFrame(animate);
-			currentTime = (new Date()).getTime();
-			if (currentTime - lastTime >= interval) {
-				/*if (sphereMesh.position.z >= 0)
-					direction = -1;
-				if (sphereMesh.position.z <= -400)
-					direction = 1;
-				sphereMesh.position.z += direction * 10;*/
-				lastTime = currentTime;
-				//render();
-			}
-			controls.update();
-			stats.update();
-		}
-		
 		var direction = 1;
 		var lastTime = (new Date()).getTime();
 		var currentTime = lastTime;
 		var interval = 20;
+		
+		function animate() {
+			requestAnimationFrame(animate);
+			currentTime = (new Date()).getTime();
+			/*if (currentTime - lastTime >= interval) {
+				if (objects[0].position.y >= 100)
+					direction = -1;
+				if (objects[0].position.y <= -50)
+					direction = 1;
+				objects[0].position.y += direction * 5;
+				lastTime = currentTime;
+				render();
+			}*/
+			//worldMatrixInverse.getInverse(camera.matrixWorldInverse);
+			controls.update();
+			stats.update();
+		}
 		
 		function render() {
 			// 1st rendering : computes depth and normals
@@ -420,6 +481,24 @@
 			}
 			renderer.render(scene, camera, diffuseTexture, true);
 			
+			// shadow maps
+			//shadowMapsShader.setUniform('lightView', 'm4', lightsView[0]);
+			//shadowMapsShader.setUniform('lightProj', 'm4', lightsProj[0]);
+			for (var i = 0 ; i < objects.length ; i++) {
+				objects[i].setMaterial(shadowMapsShader.getMaterial());
+			}
+			renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
+			renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
+			
+			for (var i = 0 ; i < objects.length ; i++) {
+				hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+				hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+				hardShadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
+				hardShadowsShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+				hardShadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+				objects[i].setMaterial(hardShadowsShader.createMaterial());
+			}
+			renderer.render(scene, camera, hardShadowsTexture, true);
 			
 			// SSDO
 			// computes 3D coords
@@ -428,35 +507,27 @@
 			}
 			renderer.render(scene, camera, coordsTexture, true);
 			
+			
 ///////////////
+			/*
 			// ssdo 1st pass
-			/*for (var i = 0 ; i < objects.length ; i++) {
-				//ssdoDirectLightingShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-				//ssdoDirectLightingShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-				objects[i].setMaterial(ssdoDirectLightingShader.createMaterial());
-			}*/
 			ssdoQuad.setMaterial(ssdoDirectLightingShader.getMaterial());
 			renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
-			
 			// ssdo 2nd pass
-			/*for (var i = 0 ; i < objects.length ; i++) {
-				//ssdoIndirectBounceShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-				//ssdoIndirectBounceShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-				objects[i].setMaterial(ssdoIndirectBounceShader.createMaterial());
-			}*/
 			ssdoQuad.setMaterial(ssdoIndirectBounceShader.getMaterial());
 			renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
-			
+			*/
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
 		}
 		
-		function loadOFF(fileName) {
+		function loadOFF(fileName, _scale) {
 			$.ajax({
 				url: fileName,
 				async: false,
 				dataType: 'text',
 				context: {
+					scale: _scale
 				},
 				complete: processOFF
 			});
@@ -469,6 +540,9 @@
 					alert('Not an OFF file');
 			else {
 				var scale = 50;
+				if (this.scale != null)
+					scale = this.scale;
+					
 				var params = lines[1].split(" ");
 				// params[0] : number of vertices
 				// params[1] : number of triangles
