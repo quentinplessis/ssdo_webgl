@@ -72,7 +72,7 @@
 		var diffuseMapShader, diffuseTexture;
 		var coordsShader, coordsTexture;
 		
-		var shadowMaps = [], shadowMapsResolution = 64;
+		var shadowMaps = [], shadowMapsResolution = 256;
 		var hardShadowsShader, hardShadowsTexture;
 		var shadowGrid = ['shadowMap1', 'shadowMap2', 'hardShadows'];
 		
@@ -112,7 +112,10 @@
 				lightsView[i] = lightsCameras[i].matrixWorldInverse;
 				lightsProj[i] = lightsCameras[i].projectionMatrix;
 				
-				lightsRot[i] = lightsCameras[i].matrixRotationWorld;
+				lightsRot[i] = new THREE.Matrix3();
+				lightsRot[i].getNormalMatrix(lightsView[i]);
+				lightsRot[i] = lightsCameras[i].rotation;
+				//lightsCameras[i].updateMatrix();
 			
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			}
@@ -231,6 +234,7 @@
 			materials[0]['matSpecular'] = 0.8;
 			materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
 			scene.add(objects[0]);
+			//objects[0].add(camera);
 			
 			var geometry = new THREE.CylinderGeometry(0, 10, 30, 4, 1);
 			objects[1] = new THREE.Mesh(geometry);

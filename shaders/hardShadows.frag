@@ -13,8 +13,6 @@ uniform mat3 lightsRot[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
 
-//uniform float shadowMapsResolution;
-
 // Material properties
 uniform float matDiffuse;
 uniform float matSpecular;
@@ -25,11 +23,8 @@ uniform vec4 matSpecularColor;
 uniform float PI;
 
 // 3D point properties
-varying vec4 P;
+varying vec4 worldPos;
 varying vec3 N;
-
-//uniform mat4 worldMatrix;
-//uniform mat4 worldMatrixInverse;
 
 float attenuation(vec3 dir, float div){
 	float dist = length(dir);
@@ -71,11 +66,11 @@ vec3 gamma(vec3 color){
 void main() {
 	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 	
-	vec3 p = vec3(P);
+	vec3 p = vec3(worldPos);
 	vec3 n = normalize(N);
 	for (int i = 0 ; i < 2 ; i++) {
 		// P : position in world space
-		vec3 lightSpacePos = (lightsView[i] * P).xyz;
+		vec3 lightSpacePos = (lightsView[i] * worldPos).xyz;
 		vec3 lightSpacePosNormalized = normalize(lightSpacePos);
 		vec4 lightScreenSpacePos = lightsProj[i] * vec4(lightSpacePos, 1.0);
 		vec2 lightSSpacePosNormalized = lightScreenSpacePos.xy / lightScreenSpacePos.w;
@@ -99,13 +94,12 @@ void main() {
 		if (lightUV.x >= 0.0 && lightUV.x <= 1.0 && lightUV.y >= 0.0 && lightUV.y <= 1.0) {
 			float bias = 0.001;
 			float illuminated = step(currentDepth, depth+bias);
-            
             vec3 excident = (
 				//skyLight(N) +
                 //lambert(lightSurfaceNormal, -lightSpacePosNormalized) *
                 phong(p, n, lightSpacePos, i) *
 				influence(lightSpacePosNormalized, 60.0) *
-                attenuation(lightSpacePos, 250.0) *
+				attenuation(lightSpacePos, 250.0) *
                 illuminated *
 				vec3(1.0, 1.0, 1.0)
             );
