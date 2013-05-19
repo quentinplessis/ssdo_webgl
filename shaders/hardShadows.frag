@@ -21,9 +21,6 @@ uniform float matSpecular;
 uniform float shininess;
 uniform vec4 matDiffuseColor;
 uniform vec4 matSpecularColor;
-// screen properties
-uniform float screenWidth;
-uniform float screenHeight;
 
 uniform float PI;
 
