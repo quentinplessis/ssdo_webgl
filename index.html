@@ -4,6 +4,7 @@
 		<title>WebGL SSDO</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<script src="lib/dat.gui.min.js"></script>
 		<script src="lib/prototype.js"></script>
 		<script src="lib/jquery-1.9.1.min.js"></script>
 		<script src="lib/three.js"></script>
@@ -40,11 +41,10 @@
 	</head>
 	<body>
 		<div id="container"></div>
-		<div id="info">
-			Grids : o (overview), s (shadows), d (ssdo) ; in a grid : 1 to 9 to navigate through the screens<br/>
-			Animation : a, direct access : p (phong), e (expressive)
-		</div>
 	</body>
+	<script>
+		
+	</script>
 	<script>
 		if (!Detector.webgl) Detector.addGetWebGLMessage();
 		
@@ -55,10 +55,13 @@
 			aspect = screenWidth / screenHeight,
 			near = 0.1,
 			far = 10000;
+			
+		var lightDefautAngle = 60.0, skyLightIntensity = 0.1;
 		
 		var $container, stats;
 		var camera, cameraRTT, controls, scene, sceneScreen, renderer, displayManager;
 		var lights = [], lightsPos = [], lightsColor = [], lightsIntensity = [];
+		var lightsAngle = [];
 		var lightsCameras = [], lightsView = [], lightsProj = [], lightsRot = [];
 		var objects = [], materials = [];
 		var blankMaterial = []; blankMaterial['matDiffuse'] = 0.8; blankMaterial['matSpecular'] = 0.3;
@@ -72,7 +75,7 @@
 		var diffuseMapShader, diffuseTexture;
 		var coordsShader, coordsTexture;
 		
-		var shadowMaps = [], shadowMapsResolution = 256;
+		var shadowMaps = [], shadowMapsResolution = 64;
 		var hardShadowsShader, hardShadowsTexture;
 		var shadowGrid = ['shadowMap1', 'shadowMap2', 'hardShadows'];
 		
@@ -93,7 +96,71 @@
 				format: THREE.RGBAFormat,
 				type: THREE.FloatType
 			};
+			
+		var FizzyText = function() {
+			this.message = 'dat.gui';
+			this.speed = 0.5;
+			this.displayOutline = false;
+			this.noiseStrength = 10;
+			this.growthSpeed = 0.1;
+			this.explode = function() { alert("ok"); };
+			this.mapsResolution = shadowMapsResolution;
+			this.gridDisplayed = 'overview';
+			this.viewDisplayed = 'phong';
+			this.nextView = function() { displayManager.nextView(); render(); };
+			this.previousView = function() { displayManager.previousView(); render(); };
+			this.lightColor = "#ffffff";
+			this.lightAngle = lightDefautAngle;
+			this.skyLightIntensity = skyLightIntensity;
+		};
+		
+		function initControls() {
+			var text = new FizzyText();
+			var gui = new dat.GUI();
+			//gui.remember(text);
+			
+			gui.add(text, 'message');
+			gui.add(text, 'displayOutline');
+			gui.add(text, 'explode');
+			
+			var displaysFolder = gui.addFolder('Views');
+			displaysFolder.add(text, 'gridDisplayed', {'Overview': 'overview', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid');
+			displaysFolder.add(text, 'viewDisplayed', {'Phong': 'phong', 'Expressive': 'expressive', 'Hard shadows': 'hardShadows'}).name('View');
+			displaysFolder.add(text, 'nextView').name('Next view');
+			displaysFolder.add(text, 'previousView').name('Previous view');
+			displaysFolder.open();
+			
+			var lightsFolder = gui.addFolder('Lights');
+			lightsFolder.addColor(text, 'lightColor').name('Color').onChange(function(value) {
+				for (var i = 0 ; i < lights.length ; i++) {
+					lights[i].setHexaColor(value);
+					lightsColor[i] = lights[i].getColor();
+				}
+				render();
+			});
+			lightsFolder.add(text, 'lightAngle', 0.0, 360.0).name('Angle').onChange(function(value) {
+				for (var i = 0 ; i < lights.length ; i++) {
+					lightsAngle[i] = value;
+				}
+				render();
+			});
+			lightsFolder.add(text, 'skyLightIntensity', 0, 1).step(0.05).name('Sky light').onChange(function(value) {
+				skyLightIntensity = value;
+				hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
+				render();
+			});
+			lightsFolder.open();
+			
+			var shadowsFolder = gui.addFolder("Shadows");
+			shadowsFolder.add(text, 'mapsResolution', 0, 512).name("Shadow maps resolution").onChange(function(value) {
+				shadowMapsResolution = Math.round(value);
+				refactorShadowMaps();
+				render();
+			});
+			shadowsFolder.open();
+		}
 	
+		initControls();
 		init();
 		animate();
 		
@@ -116,9 +183,22 @@
 				lightsRot[i].getNormalMatrix(lightsView[i]);
 				lightsRot[i] = lightsCameras[i].rotation;
 				//lightsCameras[i].updateMatrix();
+				
+				lightsAngle[i] = lightDefautAngle;
 			
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			}
+		}
+		
+		function refactorShadowMaps() {
+			for (var i = 0 ; i < lights.length ; i++) {
+				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+			}
+			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
+			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
+			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
+			displayManager.organize();
 		}
 		
 		// Initialization of the world
@@ -139,7 +219,7 @@
 				1.0
 			);
 			processLights();
-			 
+			
 			// shaders & textures
 			shaders['phong'] = new PhongShader(lightsPos, lightsColor, lightsIntensity);
 			rtTextures['phong'] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -170,7 +250,7 @@
 			shadowMapsShader = new Shader();
 			shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
 			shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
-			shadowMapsShader.setUniform('lightsProj', 'm4v', lightsProj);
+			//shadowMapsShader.setUniform('lightsProj', 'm4v', lightsProj);
 			
 			// hard shadows
 			hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -186,6 +266,8 @@
 			hardShadowsShader.setUniform('lightsPos', 'v3v', lightsPos);
 			hardShadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
 			hardShadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+			hardShadowsShader.setUniform('lightsAngle', 'fv1', lightsAngle);
+			hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
 			hardShadowsShader.setUniform('PI', 'f', Math.PI);
 			//hardShadowsShader.setUniform('worldMatrix', 'm4', camera.matrixWorldInverse);
 			
@@ -307,8 +389,16 @@
 			cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 			cameraRTT.position.z = 100;
 			
+			// world
+			initScene();
+			
+			// renderer
+			renderer = new THREE.WebGLRenderer();
+			renderer.setClearColor(0xFFFFFF, 1);
+			renderer.setSize(screenWidth, screenHeight);
+			
 			// controls
-			controls = new THREE.TrackballControls(camera);
+			controls = new THREE.TrackballControls(camera, renderer.domElement);
 			controls.rotateSpeed = 1.0;
 			controls.zoomSpeed = 1.2;
 			controls.panSpeed = 0.8;
@@ -318,14 +408,6 @@
 			controls.dynamicDampingFactor = 0.3;
 			controls.keys = [65, 83, 68];
 			controls.addEventListener('change', render);
-			
-			// world
-			initScene();
-			
-			// renderer
-			renderer = new THREE.WebGLRenderer();
-			renderer.setClearColor(0xFFFFFF, 1);
-			renderer.setSize(screenWidth, screenHeight);
 
 			// stats
 			stats = new Stats();
@@ -333,10 +415,16 @@
 			stats.domElement.style.top = '0px';
 			stats.domElement.style.zIndex = 100;
 			
+			// control panel
+			//var $controlPanel = $('#controlPanel');
+			//$controlPanel.style.position = 'aboslute';
+			//$controlPanel.style.top = '0px';
+			
 			// display
 			$container = $('#container');
 			$container.append(renderer.domElement);
 			$container.append(stats.domElement);
+			//$container.append($controlPanel);
 			
 			window.addEventListener('resize', onWindowResize, false);
 			window.addEventListener('keydown', keyDown, false);

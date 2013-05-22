@@ -1,4 +1,9 @@
 
+// hexa to decimal
+function h2d(hexa) {
+	return parseInt(hexa, 16);
+}
+
 var Light = Class.create({
     // Constructor
     initialize: function(position, color, intensity) {  
@@ -18,6 +23,14 @@ var Light = Class.create({
 	},
 	setColor: function(color) {
 		this.color = color;
+	},
+	setHexaColor: function(color) {
+		this.color = new THREE.Vector4(
+			h2d(color.substring(1, 3)) / 255,
+			h2d(color.substring(3, 5)) / 255,
+			h2d(color.substring(5, 7)) / 255,
+			1.0
+		);
 	},
 	getColor: function() {
 		return this.color;

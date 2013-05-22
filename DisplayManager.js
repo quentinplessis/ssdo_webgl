@@ -7,6 +7,7 @@ var DisplayManager = Class.create({
 		this.displays = [];
 		this.names = [];
 		this.quads = [];
+		this.id;
     },
 	addDisplay: function(display, name) {
 		if (name != null)
@@ -34,6 +35,28 @@ var DisplayManager = Class.create({
 	changeMode: function(mode) {
 		this.mode = mode;
 		this.organize();
+	},
+	nextView: function() {
+		var _id = 0;
+		if (this.mode.type == 'SINGLE')
+			_id = (this.id + 1) % this.displays.length;
+		else if (this.mode.type == 'GRID') {
+			_id = this.names[this.mode.names[0]];
+		}
+		this.changeMode({type: 'SINGLE', id: _id});
+	},
+	previousView: function() {
+		var _id = 0;
+		if (this.mode.type == 'SINGLE') {
+			if (this.id == 0)
+				_id = this.displays.length - 1;
+			else
+				_id = this.id - 1;
+		}
+		else if (this.mode.type == 'GRID') {
+			_id = this.names[this.mode.names[0]];
+		}
+		this.changeMode({type: 'SINGLE', id: _id});
 	},
 	organize: function() {
 		//this.scene = new THREE.Scene();
@@ -77,6 +100,7 @@ var DisplayManager = Class.create({
 		}
 		else if (this.mode.type == 'SINGLE') {
 			var id = this.mode.id != null ? this.mode.id : this.names[this.mode.name];
+			this.id = id;
 			if (id < this.displays.length) {
 				var plane = new THREE.PlaneGeometry(width, height);
 				this.quads[id] = new THREE.Mesh(plane, this.displays[id].getMaterial());

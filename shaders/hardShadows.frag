@@ -6,12 +6,15 @@ uniform sampler2D shadowMaps[2];
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
 
+// lights
 uniform mat4 lightsView[2];
 uniform mat4 lightsProj[2];
 uniform vec3 lightsPos[2];
 uniform mat3 lightsRot[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
+uniform float lightsAngle[2];
+uniform float skyLightIntensity;
 
 // Material properties
 uniform float matDiffuse;
@@ -26,19 +29,19 @@ uniform float PI;
 varying vec4 worldPos;
 varying vec3 N;
 
-float attenuation(vec3 dir, float div){
+float attenuation(vec3 dir, float div) {
 	float dist = length(dir);
 	float radiance = 1.0/(1.0+pow(dist/div, 2.0));
 	return clamp(radiance*10.0, 0.0, 1.0); // * 10.0
 }
 
-float influence(vec3 normal, float coneAngle){
+float influence(vec3 normal, float coneAngle) {
 	float minConeAngle = ((360.0-coneAngle-10.0)/360.0)*PI;
 	float maxConeAngle = ((360.0-coneAngle)/360.0)*PI;
 	return smoothstep(minConeAngle, maxConeAngle, acos(normal.z));
 }
 
-float lambert(vec3 surfaceNormal, vec3 lightDirNormal){
+float lambert(vec3 surfaceNormal, vec3 lightDirNormal) {
 	return max(0.0, dot(surfaceNormal, lightDirNormal));
 }
 
@@ -55,8 +58,8 @@ vec3 phong(vec3 p, vec3 n, vec3 lightSpacePos, int i) {
 	return vec3((diffuse * matDiffuse * matDiffuseColor + spec * matSpecular * matSpecularColor) * lightsColor[i] * lightsIntensity[i]);
 }
 
-vec3 skyLight(vec3 normal){
-	return vec3(smoothstep(0.0, PI, PI-acos(normal.y)))*0.4;
+vec3 skyLight(vec3 normal) {
+	return vec3(smoothstep(0.0, PI, PI - acos(normal.y))) * skyLightIntensity;
 }
 
 vec3 gamma(vec3 color){
@@ -95,10 +98,10 @@ void main() {
 			float bias = 0.001;
 			float illuminated = step(currentDepth, depth+bias);
             vec3 excident = (
-				//skyLight(N) +
+				skyLight(N) +
                 //lambert(lightSurfaceNormal, -lightSpacePosNormalized) *
                 phong(p, n, lightSpacePos, i) *
-				influence(lightSpacePosNormalized, 60.0) *
+				influence(lightSpacePosNormalized, lightsAngle[i]) *
 				attenuation(lightSpacePos, 250.0) *
                 illuminated *
 				vec3(1.0, 1.0, 1.0)
