@@ -56,12 +56,13 @@
 			near = 0.1,
 			far = 10000;
 			
-		var lightDefautAngle = 60.0, skyLightIntensity = 0.1;
+		var lightDefaultAngle = 60.0, skyLightIntensity = 0.1, 
+			lightDefaultAttenuation = 0.4, lightDefaultIntensity = 1.0;
 		
 		var $container, stats;
 		var camera, cameraRTT, controls, scene, sceneScreen, renderer, displayManager;
 		var lights = [], lightsPos = [], lightsColor = [], lightsIntensity = [];
-		var lightsAngle = [];
+		var lightsAngle = [], lightsAttenuation = [];
 		var lightsCameras = [], lightsView = [], lightsProj = [], lightsRot = [];
 		var objects = [], materials = [];
 		var blankMaterial = []; blankMaterial['matDiffuse'] = 0.8; blankMaterial['matSpecular'] = 0.3;
@@ -109,9 +110,13 @@
 			this.viewDisplayed = 'phong';
 			this.nextView = function() { displayManager.nextView(); render(); };
 			this.previousView = function() { displayManager.previousView(); render(); };
+			this.allLights = false;
+			this.selectedLight = 0;
 			this.lightColor = "#ffffff";
-			this.lightAngle = lightDefautAngle;
+			this.lightIntensity = lightDefaultIntensity;
+			this.lightAngle = lightDefaultAngle;
 			this.skyLightIntensity = skyLightIntensity;
+			this.lightAttenuation = lightDefaultAttenuation;
 		};
 		
 		function initControls() {
@@ -131,22 +136,50 @@
 			displaysFolder.open();
 			
 			var lightsFolder = gui.addFolder('Lights');
-			lightsFolder.addColor(text, 'lightColor').name('Color').onChange(function(value) {
-				for (var i = 0 ; i < lights.length ; i++) {
-					lights[i].setHexaColor(value);
-					lightsColor[i] = lights[i].getColor();
-				}
-				render();
-			});
-			lightsFolder.add(text, 'lightAngle', 0.0, 360.0).name('Angle').onChange(function(value) {
-				for (var i = 0 ; i < lights.length ; i++) {
-					lightsAngle[i] = value;
-				}
-				render();
-			});
 			lightsFolder.add(text, 'skyLightIntensity', 0, 1).step(0.05).name('Sky light').onChange(function(value) {
 				skyLightIntensity = value;
 				hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
+				render();
+			});
+			lightsFolder.add(text, 'allLights').name('All');
+			var lightsToSelect = {};
+			for (var i = 0 ; i < lights.length ; i++)
+				lightsToSelect["Light " + i] = i;
+			lightsFolder.add(text, 'selectedLight', lightsToSelect).name('Lights');
+			lightsFolder.addColor(text, 'lightColor').name('Color').onChange(function(value) {
+				if (text.allLights)
+					for (var i = 0 ; i < lights.length ; i++) {
+						lights[i].setHexaColor(value);
+						lightsColor[i] = lights[i].getColor();
+					}
+				else {
+					lights[text.selectedLight].setHexaColor(value);
+					lightsColor[text.selectedLight] = lights[text.selectedLight].getColor();
+				}
+				render();
+			});
+			lightsFolder.add(text, 'lightIntensity', 0.0, 2.0).name('Intensity').onChange(function(value) {
+				if (text.allLights)
+					for (var i = 0 ; i < lights.length ; i++)
+						lightsIntensity[i] = value;
+				else
+					lightsIntensity[text.selectedLight] = value;
+				render();
+			});
+			lightsFolder.add(text, 'lightAngle', 0.0, 360.0).name('Angle').onChange(function(value) {
+				if (text.allLights)
+					for (var i = 0 ; i < lights.length ; i++)
+						lightsAngle[i] = value;
+				else
+					lightsAngle[text.selectedLight] = value;
+				render();
+			});
+			lightsFolder.add(text, 'lightAttenuation', 0.0, 5.0).name('Attenuation').onChange(function(value) {
+				if (text.allLights)
+					for (var i = 0 ; i < lights.length ; i++)
+						lightsAttenuation[i] = value;
+				else
+					lightsAttenuation[text.selectedLight] = value;
 				render();
 			});
 			lightsFolder.open();
@@ -160,8 +193,8 @@
 			shadowsFolder.open();
 		}
 	
-		initControls();
 		init();
+		initControls();
 		animate();
 		
 		// process lights for shaders
@@ -184,7 +217,8 @@
 				lightsRot[i] = lightsCameras[i].rotation;
 				//lightsCameras[i].updateMatrix();
 				
-				lightsAngle[i] = lightDefautAngle;
+				lightsAngle[i] = lightDefaultAngle;
+				lightsAttenuation[i] = lightDefaultAttenuation;
 			
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			}
@@ -269,6 +303,7 @@
 			hardShadowsShader.setUniform('lightsAngle', 'fv1', lightsAngle);
 			hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
 			hardShadowsShader.setUniform('PI', 'f', Math.PI);
+			hardShadowsShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
 			//hardShadowsShader.setUniform('worldMatrix', 'm4', camera.matrixWorldInverse);
 			
 			// SSDO shaders
