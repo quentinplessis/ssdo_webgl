@@ -58,6 +58,7 @@
 			
 		var lightDefaultAngle = 60.0, skyLightIntensity = 0.1, 
 			lightDefaultAttenuation = 0.4, lightDefaultIntensity = 1.0;
+		var cameraSpeed = 10.0;
 		
 		var $container, stats;
 		var camera, cameraRTT, controls, scene, sceneScreen, renderer, displayManager;
@@ -85,7 +86,7 @@
 		var ssdoIndirectBounceShader, ssdoFinalBuffer;
 		var ssdoGrid = ['ssdoDirect', 'ssdoFinal'];
 		
-		var MODE = 'SHADOWS', ANIMATION = false;
+		var MODE = 'SHADOWS', ANIMATION = false, CAM_CONTROL = 'CAMERA';
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -112,6 +113,7 @@
 			this.previousView = function() { displayManager.previousView(); render(); };
 			this.allLights = false;
 			this.selectedLight = 0;
+			this.lightControl = false;
 			this.lightColor = "#ffffff";
 			this.lightIntensity = lightDefaultIntensity;
 			this.lightAngle = lightDefaultAngle;
@@ -145,7 +147,19 @@
 			var lightsToSelect = {};
 			for (var i = 0 ; i < lights.length ; i++)
 				lightsToSelect["Light " + i] = i;
-			lightsFolder.add(text, 'selectedLight', lightsToSelect).name('Lights');
+			lightsFolder.add(text, 'selectedLight', lightsToSelect).name('Light').onChange(function(value) {
+				if (text.lightControl)
+					initCameraControls(lightsCameras[value]);
+			});
+			lightsFolder.add(text, 'lightControl').name('Take control').onChange(function(value) {
+				if (value)
+					initCameraControls(lightsCameras[text.selectedLight]);
+					//CAM_CONTROL = 'LIGHT';
+				else {
+					//CAM_CONTROL = 'CAMERA';
+					initCameraControls(camera);
+				}
+			});
 			lightsFolder.addColor(text, 'lightColor').name('Color').onChange(function(value) {
 				if (text.allLights)
 					for (var i = 0 ; i < lights.length ; i++) {
@@ -414,6 +428,19 @@
 				displayManager.changeMode({type: 'GRID', cols: 2, rows: 1, names: ssdoGrid});
 		}
 		
+		function initCameraControls(cam) {
+			controls = new THREE.TrackballControls(cam, renderer.domElement);
+			controls.rotateSpeed = 1.0;
+			controls.zoomSpeed = 1.2;
+			controls.panSpeed = 0.8;
+			controls.noZoom = false;
+			controls.noPan = false;
+			controls.staticMoving = true;
+			controls.dynamicDampingFactor = 0.3;
+			controls.keys = [65, 83, 68];
+			controls.addEventListener('change', render);
+		}
+		
 		// Initialization
 		function init() {
 			camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
@@ -433,39 +460,25 @@
 			renderer.setSize(screenWidth, screenHeight);
 			
 			// controls
-			controls = new THREE.TrackballControls(camera, renderer.domElement);
-			controls.rotateSpeed = 1.0;
-			controls.zoomSpeed = 1.2;
-			controls.panSpeed = 0.8;
-			controls.noZoom = false;
-			controls.noPan = false;
-			controls.staticMoving = true;
-			controls.dynamicDampingFactor = 0.3;
-			controls.keys = [65, 83, 68];
-			controls.addEventListener('change', render);
+			initCameraControls(camera);
 
 			// stats
 			stats = new Stats();
 			stats.domElement.style.position = 'absolute';
 			stats.domElement.style.top = '0px';
 			stats.domElement.style.zIndex = 100;
-			
-			// control panel
-			//var $controlPanel = $('#controlPanel');
-			//$controlPanel.style.position = 'aboslute';
-			//$controlPanel.style.top = '0px';
-			
+
 			// display
 			$container = $('#container');
 			$container.append(renderer.domElement);
 			$container.append(stats.domElement);
-			//$container.append($controlPanel);
 			
 			window.addEventListener('resize', onWindowResize, false);
 			window.addEventListener('keydown', keyDown, false);
 		}
 		
 		function keyDown(event) {
+			
 			if (event.keyCode == 65) // a
 				ANIMATION = !ANIMATION;
 			else if (event.keyCode == 79) { // o
@@ -496,8 +509,26 @@
 				MODE = 'SSDO';
 				displayManager.changeMode({type: 'GRID', cols: 2, rows: 1, names: ssdoGrid});
 			}
+			else if (event.keyCode == 38) { // up
+				var pLocal = new THREE.Vector3(0, 0, -1);
+				var pWorld = pLocal.applyMatrix4(camera.matrixWorld);
+				var dir = pWorld.sub(camera.position).normalize();
+				camera.position.x += cameraSpeed * dir.x;
+				camera.position.y += cameraSpeed * dir.y;
+				camera.position.z += cameraSpeed * dir.z;
+			}
+			else if (event.keyCode == 38) { // up
+				var pLocal = new THREE.Vector3(0, 0, -1);
+				var pWorld = pLocal.applyMatrix4(camera.matrixWorld);
+				var dir = pWorld.sub(camera.position).normalize();
+				camera.position.x += cameraSpeed * dir.x;
+				camera.position.y += cameraSpeed * dir.y;
+				camera.position.z += cameraSpeed * dir.z;
+			}
 			render();
 		}
+		
+		function doNothing() {}
 	
 		function render() {
 			if (MODE == 'NORMAL' || MODE == 'SHADOWS' || MODE == 'SSDO') {
@@ -572,7 +603,6 @@
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.getMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 			}
-			
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
 		}
