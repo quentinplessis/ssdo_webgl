@@ -18,33 +18,11 @@
 		<script src="DiffuseShader.js"></script>
 		<script src="Light.js"></script>
 		<script src="DisplayManager.js"></script>
-		<style>
-			body {
-				color: #000;
-				font-family: Monospace;
-				font-size: 13px;
-				text-align: center;
-				font-weight: bold;
-
-				background-color: #ffffff;
-				margin: 0px;
-				overflow: hidden;
-			}
-			
-			#info {
-				color: #000;
-				position: absolute;
-				top: 0px; width: 100%;
-				padding: 5px;
-			}
-		</style>
+		<link rel="stylesheet" href="css/main.css" />  
 	</head>
 	<body>
 		<div id="container"></div>
 	</body>
-	<script>
-		
-	</script>
 	<script>
 		if (!Detector.webgl) Detector.addGetWebGLMessage();
 		
@@ -79,14 +57,20 @@
 		
 		var shadowMaps = [], shadowMapsResolution = 64;
 		var hardShadowsShader, hardShadowsTexture;
-		var shadowGrid = ['shadowMap1', 'shadowMap2', 'hardShadows'];
 		
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
 		var ssdoIndirectBounceShader, ssdoFinalBuffer;
-		var ssdoGrid = ['ssdoDirect', 'ssdoFinal'];
 		
-		var MODE = 'SHADOWS', ANIMATION = false, CAM_CONTROL = 'CAMERA';
+		var customDisplays = [];
+		customDisplays['normal'] = {cols: 2	, rows: 3, names: ['depth', 'normals', 'depthAndNormals', 'diffuse', 'phong', 'expressive']};
+		customDisplays['all'] = {cols: 4, rows: 3, all: true};
+		customDisplays['shadows'] = {cols: 2, rows: 2, 
+			names: ['shadowMap1', 'shadowMap2', 'hardShadows']};
+		customDisplays['ssdo'] = {cols: 2, rows: 1, 
+			names: ['ssdoDirect', 'ssdoFinal']};
+		
+		var MODE = 'shadows', ANIMATION = false;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -99,415 +83,59 @@
 				type: THREE.FloatType
 			};
 			
-		var FizzyText = function() {
-			this.message = 'dat.gui';
-			this.speed = 0.5;
-			this.displayOutline = false;
-			this.noiseStrength = 10;
-			this.growthSpeed = 0.1;
-			this.explode = function() { alert("ok"); };
-			this.mapsResolution = shadowMapsResolution;
-			this.gridDisplayed = 'overview';
-			this.viewDisplayed = 'phong';
-			this.nextView = function() { displayManager.nextView(); render(); };
-			this.previousView = function() { displayManager.previousView(); render(); };
-			this.allLights = false;
-			this.selectedLight = 0;
-			this.lightControl = false;
-			this.lightColor = "#ffffff";
-			this.lightIntensity = lightDefaultIntensity;
-			this.lightAngle = lightDefaultAngle;
-			this.skyLightIntensity = skyLightIntensity;
-			this.lightAttenuation = lightDefaultAttenuation;
-		};
-		
-		function initControls() {
-			var text = new FizzyText();
-			var gui = new dat.GUI();
-			//gui.remember(text);
-			
-			gui.add(text, 'message');
-			gui.add(text, 'displayOutline');
-			gui.add(text, 'explode');
-			
-			var displaysFolder = gui.addFolder('Views');
-			displaysFolder.add(text, 'gridDisplayed', {'Overview': 'overview', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid');
-			displaysFolder.add(text, 'viewDisplayed', {'Phong': 'phong', 'Expressive': 'expressive', 'Hard shadows': 'hardShadows'}).name('View');
-			displaysFolder.add(text, 'nextView').name('Next view');
-			displaysFolder.add(text, 'previousView').name('Previous view');
-			displaysFolder.open();
-			
-			var lightsFolder = gui.addFolder('Lights');
-			lightsFolder.add(text, 'skyLightIntensity', 0, 1).step(0.05).name('Sky light').onChange(function(value) {
-				skyLightIntensity = value;
-				hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
-				render();
-			});
-			lightsFolder.add(text, 'allLights').name('All');
-			var lightsToSelect = {};
-			for (var i = 0 ; i < lights.length ; i++)
-				lightsToSelect["Light " + i] = i;
-			lightsFolder.add(text, 'selectedLight', lightsToSelect).name('Light').onChange(function(value) {
-				if (text.lightControl)
-					initCameraControls(lightsCameras[value]);
-			});
-			lightsFolder.add(text, 'lightControl').name('Take control').onChange(function(value) {
-				if (value)
-					initCameraControls(lightsCameras[text.selectedLight]);
-					//CAM_CONTROL = 'LIGHT';
-				else {
-					//CAM_CONTROL = 'CAMERA';
-					initCameraControls(camera);
-				}
-			});
-			lightsFolder.addColor(text, 'lightColor').name('Color').onChange(function(value) {
-				if (text.allLights)
-					for (var i = 0 ; i < lights.length ; i++) {
-						lights[i].setHexaColor(value);
-						lightsColor[i] = lights[i].getColor();
-					}
-				else {
-					lights[text.selectedLight].setHexaColor(value);
-					lightsColor[text.selectedLight] = lights[text.selectedLight].getColor();
-				}
-				render();
-			});
-			lightsFolder.add(text, 'lightIntensity', 0.0, 2.0).name('Intensity').onChange(function(value) {
-				if (text.allLights)
-					for (var i = 0 ; i < lights.length ; i++)
-						lightsIntensity[i] = value;
-				else
-					lightsIntensity[text.selectedLight] = value;
-				render();
-			});
-			lightsFolder.add(text, 'lightAngle', 0.0, 360.0).name('Angle').onChange(function(value) {
-				if (text.allLights)
-					for (var i = 0 ; i < lights.length ; i++)
-						lightsAngle[i] = value;
-				else
-					lightsAngle[text.selectedLight] = value;
-				render();
-			});
-			lightsFolder.add(text, 'lightAttenuation', 0.0, 5.0).name('Attenuation').onChange(function(value) {
-				if (text.allLights)
-					for (var i = 0 ; i < lights.length ; i++)
-						lightsAttenuation[i] = value;
-				else
-					lightsAttenuation[text.selectedLight] = value;
-				render();
-			});
-			lightsFolder.open();
-			
-			var shadowsFolder = gui.addFolder("Shadows");
-			shadowsFolder.add(text, 'mapsResolution', 0, 512).name("Shadow maps resolution").onChange(function(value) {
-				shadowMapsResolution = Math.round(value);
-				refactorShadowMaps();
-				render();
-			});
-			shadowsFolder.open();
-		}
-	
+	</script>
+	<script src="Controls.js"></script>
+	<script src="Initialization.js"></script>
+	<script>
 		init();
 		initControls();
 		animate();
 		
-		// process lights for shaders
-		function processLights() {
-			var lightsNumber = lights.length;
-			for (var i = 0 ; i < lights.length ; i++) {
-				lightsPos[i] = lights[i].getPosition();
-				lightsColor[i] = lights[i].getColor();
-				lightsIntensity[i] = lights[i].getIntensity();
-				
-				lightsCameras[i] = new THREE.PerspectiveCamera(70.0, 1.0, 0.1, 1000.0);
-				lightsCameras[i].position = lightsPos[i];
-				lightsCameras[i].lookAt(lights[i].getLookAt()); 
-				
-				lightsView[i] = lightsCameras[i].matrixWorldInverse;
-				lightsProj[i] = lightsCameras[i].projectionMatrix;
-				
-				lightsRot[i] = new THREE.Matrix3();
-				lightsRot[i].getNormalMatrix(lightsView[i]);
-				lightsRot[i] = lightsCameras[i].rotation;
-				//lightsCameras[i].updateMatrix();
-				
-				lightsAngle[i] = lightDefaultAngle;
-				lightsAttenuation[i] = lightDefaultAttenuation;
-			
-				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
-			}
-		}
-		
 		function refactorShadowMaps() {
-			for (var i = 0 ; i < lights.length ; i++) {
+			for (var i = 0 ; i < lights.length ; i++)
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
-			}
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 			displayManager.organize();
-		}
-		
-		// Initialization of the world
-		function initScene() {
-			scene = new THREE.Scene();
-			sceneScreen = new THREE.Scene();
-			//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
-			
-			// lights
-			lights[0] = new Light(
-				new THREE.Vector3(250, 200, 180),
-				new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
-				1.0
-			);
-			lights[1] = new Light(
-				new THREE.Vector3(-200, 400, 150),
-				new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
-				1.0
-			);
-			processLights();
-			
-			// shaders & textures
-			shaders['phong'] = new PhongShader(lightsPos, lightsColor, lightsIntensity);
-			rtTextures['phong'] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			
-			shaders['expressive'] = new ExpressiveShader(lightsPos, lightsColor, lightsIntensity);
-			rtTextures['expressive'] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			
-			shaders['diffuse'] = new DiffuseShader(lightsPos, lightsColor, lightsIntensity);
-			rtTextures['diffuse'] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			
-			normalsAndDepthShader = new Shader();
-			normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
-			normalsAndDepthShader.loadShader('shaders/computesNormalsDepth.frag', 'fragment');
-			normalsAndDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			
-			// SSDO required inputs
-			coordsShader = new Shader();
-			coordsShader.loadShader('shaders/computesCoords.vert', 'vertex');
-			coordsShader.loadShader('shaders/computesCoords.frag', 'fragment');
-			coordsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			
-			diffuseMapShader = new Shader();
-			diffuseMapShader.loadShader('shaders/default.vert', 'vertex');
-			diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
-			diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			
-			// shadow mapping
-			shadowMapsShader = new Shader();
-			shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
-			shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
-			//shadowMapsShader.setUniform('lightsProj', 'm4v', lightsProj);
-			
-			// hard shadows
-			hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			hardShadowsShader = new Shader();
-			hardShadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
-			hardShadowsShader.loadShader('shaders/hardShadows.frag', 'fragment');
-			hardShadowsShader.setUniform('shadowMaps', 'vt', shadowMaps);
-			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
-			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
-			hardShadowsShader.setUniform('lightsView', 'm4v', lightsView);
-			hardShadowsShader.setUniform('lightsProj', 'm4v', lightsProj);
-			hardShadowsShader.setUniform('lightsRot', 'm3v', lightsRot);
-			hardShadowsShader.setUniform('lightsPos', 'v3v', lightsPos);
-			hardShadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
-			hardShadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-			hardShadowsShader.setUniform('lightsAngle', 'fv1', lightsAngle);
-			hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
-			hardShadowsShader.setUniform('PI', 'f', Math.PI);
-			hardShadowsShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
-			//hardShadowsShader.setUniform('worldMatrix', 'm4', camera.matrixWorldInverse);
-			
-			// SSDO shaders
-			directLightBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-			ssdoDirectLightingShader = new Shader();
-			ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture);
-			ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
-			ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
-			ssdoDirectLightingShader.loadShader('shaders/ssdo.vert', 'vertex');
-			ssdoDirectLightingShader.loadShader('shaders/SSDODirectLighting.frag', 'fragment');
-			ssdoDirectLightingShader.setUniform('screenWidth', 'f', window.innerWidth);
-			ssdoDirectLightingShader.setUniform('screenHeight', 'f', window.innerHeight);
-			ssdoDirectLightingShader.setUniform('lightsPos', 'v3v', lightsPos);
-			ssdoDirectLightingShader.setUniform('lightsColor', 'v4v', lightsColor);
-			ssdoDirectLightingShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-			ssdoDirectLightingShader.setUniform('projectionM', 'mat4', camera.projectionMatrix);
-			//ssdoDirectLightingShader.setUniform('cameraPosition', 'vec3', camera.position);
-			
-			ssdoIndirectBounceShader = new Shader();
-			ssdoIndirectBounceShader.loadShader('shaders/ssdo.vert', 'vertex');
-			ssdoIndirectBounceShader.loadShader('shaders/SSDOIndirectBounce.frag', 'fragment');
-			ssdoIndirectBounceShader.setUniform('directLightBuffer', 't', directLightBuffer);
-			ssdoIndirectBounceShader.setUniform('positionsBuffer', 't', coordsTexture);
-			ssdoIndirectBounceShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
-			ssdoIndirectBounceShader.setUniform('diffuseTexture', 't', diffuseTexture);
-			ssdoIndirectBounceShader.setUniform('screenWidth', 'f', window.innerWidth);
-			ssdoIndirectBounceShader.setUniform('screenHeight', 'f', window.innerHeight);
-			ssdoIndirectBounceShader.setUniform('lightsPos', 'v3v', lightsPos);
-			ssdoIndirectBounceShader.setUniform('lightsColor', 'v4v', lightsColor);
-			ssdoIndirectBounceShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-			ssdoIndirectBounceShader.setUniform('projectionM', 'mat4', camera.projectionMatrix);
-			//ssdoIndirectBounceShader.setUniform('cameraPosition', 'vec3', camera.position);
-			
-			ssdoScene = new THREE.Scene();
-			var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
-			ssdoQuad = new THREE.Mesh(plane);
-			ssdoScene.add(ssdoQuad);
-			
-			// sphere
-			var sphereMaterial = new THREE.MeshLambertMaterial({color: 0xCC0000});
-			var radius = 50, segments = 16, rings = 16;
-			var sphereGeometry = new THREE.SphereGeometry(radius, segments, rings);
-			objects[0] = new THREE.Mesh(sphereGeometry);
-			materials[0] = jQuery.extend(true, {}, blankMaterial);
-			materials[0]['matSpecular'] = 0.8;
-			materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
-			scene.add(objects[0]);
-			//objects[0].add(camera);
-			
-			var geometry = new THREE.CylinderGeometry(0, 10, 30, 4, 1);
-			objects[1] = new THREE.Mesh(geometry);
-			objects[1].position.x = -100;
-			objects[1].position.z = -100;
-			objects[1].position.y = -50;
-			materials[1] = materials[0];
-			scene.add(objects[1]);
-			
-			// off importation
-			loadOFF('models/monkey.off');
-			objects[2].position.x = 150;
-			materials[2] = jQuery.extend(true, {}, blankMaterial);
-			materials[2]['matDiffuseColor'] = new THREE.Vector4(0.2, 1.0, 0.2, 1.0);
-			scene.add(objects[2]);
-			
-			loadOFF('models/ram.off');
-			objects[3].position.x = -80;
-			objects[3].position.z = 100;
-			objects[3].position.y = -50;
-			objects[3].rotation.x = - Math.PI / 2;
-			materials[3] = jQuery.extend(true, {}, blankMaterial);
-			materials[3]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.0, 0.5, 1.0);
-			scene.add(objects[3]);
-			
-			loadOFF('models/ground.off', 200);
-			objects[4].position.y = -100;
-			objects[4].rotation.x = - Math.PI / 2;
-			materials[4] = jQuery.extend(true, {}, blankMaterial);
-			materials[4]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.5, 0.5, 1.0);
-			scene.add(objects[4]);
-			
-			//phongShader.setAttribute('displacement', 'f', []);
-			// now populate the array of attributes
-			/*var vertices = sphere.geometry.vertices;
-			var values = attributes.displacement.value
-			for(var v = 0; v < vertices.length; v++) {
-				values.push(Math.random() * 30);
-			}*/
-			
-			// displays for the different renderings
-			displayManager = new DisplayManager(sceneScreen, {type: 'GRID', cols: 2, rows: 3});
-			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepth.frag');
-			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayNormals.frag');
-			displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepthNormals.frag');
-			displayManager.addSimpleTexture(rtTextures['phong'], 'phong');
-			displayManager.addSimpleTexture(rtTextures['expressive'], 'expressive');
-			displayManager.addSimpleTexture(rtTextures['diffuse']);
-			displayManager.addSimpleTexture(diffuseTexture);
-			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
-			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
-			displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
-			displayManager.addSimpleTexture(directLightBuffer, 'ssdoDirect');
-			displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
-			displayManager.organize();
-			
-			if (MODE == 'SHADOWS')
-				displayManager.changeMode({type: 'GRID', cols: 2, rows: 2, names: shadowGrid});
-			else if (MODE == 'SSDO')
-				displayManager.changeMode({type: 'GRID', cols: 2, rows: 1, names: ssdoGrid});
-		}
-		
-		function initCameraControls(cam) {
-			controls = new THREE.TrackballControls(cam, renderer.domElement);
-			controls.rotateSpeed = 1.0;
-			controls.zoomSpeed = 1.2;
-			controls.panSpeed = 0.8;
-			controls.noZoom = false;
-			controls.noPan = false;
-			controls.staticMoving = true;
-			controls.dynamicDampingFactor = 0.3;
-			controls.keys = [65, 83, 68];
-			controls.addEventListener('change', render);
-		}
-		
-		// Initialization
-		function init() {
-			camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
-			//camera.position.x = 200;
-			camera.position.y = 200;
-			camera.position.z = 300;
-			
-			cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
-			cameraRTT.position.z = 100;
-			
-			// world
-			initScene();
-			
-			// renderer
-			renderer = new THREE.WebGLRenderer();
-			renderer.setClearColor(0xFFFFFF, 1);
-			renderer.setSize(screenWidth, screenHeight);
-			
-			// controls
-			initCameraControls(camera);
-
-			// stats
-			stats = new Stats();
-			stats.domElement.style.position = 'absolute';
-			stats.domElement.style.top = '0px';
-			stats.domElement.style.zIndex = 100;
-
-			// display
-			$container = $('#container');
-			$container.append(renderer.domElement);
-			$container.append(stats.domElement);
-			
-			window.addEventListener('resize', onWindowResize, false);
-			window.addEventListener('keydown', keyDown, false);
 		}
 		
 		function keyDown(event) {
-			
 			if (event.keyCode == 65) // a
 				ANIMATION = !ANIMATION;
 			else if (event.keyCode == 79) { // o
-				MODE = 'NORMAL';
-				displayManager.changeMode({type: 'GRID', cols: 2, rows: 3});
+				MODE = 'all';
+				displayManager.display(customDisplays[MODE]);
+			}
+			else if (event.keyCode == 78) { // n
+				MODE = 'normal';
+				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode >= 97 && event.keyCode <= 105) { // 1 to 9
-				if (MODE == 'NORMAL')
+				/*if (MODE == 'normal')
 					displayManager.changeMode({type: 'SINGLE', id: (event.keyCode - 97)});
-				else if (MODE == 'SHADOWS')
+				else if (MODE == 'shadows')
 					displayManager.changeMode({type: 'SINGLE', name: shadowGrid[event.keyCode - 97]});
-				else if (MODE == 'SSDO')
+				else if (MODE == 'ssdo')
 					displayManager.changeMode({type: 'SINGLE', name: ssdoGrid[event.keyCode - 97]});
+				*/
 			}
 			else if (event.keyCode == 80) { // p
-				MODE = 'NORMAL';
-				displayManager.changeMode({type: 'SINGLE', name: 'phong'});
+				MODE = 'normal';
+				displayManager.display({names: ['phong']});
 			}
 			else if (event.keyCode == 69) { // e
-				MODE = 'NORMAL';
-				displayManager.changeMode({type: 'SINGLE', name: 'expressive'});
+				MODE = 'normal';
+				displayManager.display({names: ['expressive']});
 			}
 			else if (event.keyCode == 83) { // s
-				MODE = 'SHADOWS';
-				displayManager.changeMode({type: 'GRID', cols: 2, rows: 2, names: shadowGrid});
+				MODE = 'shadows';
+				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 68) { // d
-				MODE = 'SSDO';
-				displayManager.changeMode({type: 'GRID', cols: 2, rows: 1, names: ssdoGrid});
+				MODE = 'ssdo';
+				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 38) { // up
 				var pLocal = new THREE.Vector3(0, 0, -1);
@@ -527,18 +155,16 @@
 			}
 			render();
 		}
-		
-		function doNothing() {}
 	
 		function render() {
-			if (MODE == 'NORMAL' || MODE == 'SHADOWS' || MODE == 'SSDO') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo') {
 				// 1st rendering : computes depth and normals
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
 				renderer.render(scene, camera, normalsAndDepthTexture, true);
 			}
 			
-			if (MODE == 'NORMAL') {
+			if (MODE == 'all' || MODE == 'normal') {
 				// 2nd rendering : complete rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					shaders['phong'].use(materials[i]['matDiffuse'], materials[i]['matSpecular'], materials[i]['shininess'], materials[i]['matDiffuseColor'], materials[i]['matSpecularColor'], materials[i]['matEmissive'], materials[i]['matEmissiveColor']);
@@ -561,7 +187,7 @@
 				renderer.render(scene, camera, rtTextures['diffuse'], true);
 			}
 			
-			if (MODE == 'SSDO') {
+			if (MODE == 'all' || MODE == 'ssdo') {
 				// 5th rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -571,7 +197,7 @@
 				renderer.render(scene, camera, diffuseTexture, true);
 			}
 			
-			if (MODE == 'SHADOWS') {
+			if (MODE == 'all' || MODE == 'shadows') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
@@ -590,7 +216,7 @@
 			}
 			
 			// SSDO
-			if (MODE == 'SSDO') {
+			if (MODE == 'all' || MODE == 'ssdo') {
 				// computes 3D coords
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(coordsShader.getMaterial());

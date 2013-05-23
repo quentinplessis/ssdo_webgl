@@ -51,13 +51,6 @@ var Light = Class.create({
 		return this.lookAt;
 	},
 	generateViewMatrix: function() {
-		/*var zAxis = this.lookAt - this.position;
-		zAxis.normalize();
-		var xAxis = new THREE.vec3(0.0, 0.0, 0.0);
-		this.up.normalize();
-		xAxis.crossVectors(this.up, zAxis);
-		var yAxis = new THREE.vec3(0.0, 0.0, 0.0);
-		yAxis.crossVectors(zAxis, xAxis);*/
 		this.viewMatrix = new THREE.Matrix4();
 		this.viewMatrix.lookAt(this.position, this.lookAt, this.up);
 		return this.viewMatrix;
