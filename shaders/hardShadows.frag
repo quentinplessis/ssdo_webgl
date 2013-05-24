@@ -15,6 +15,7 @@ uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
 uniform float lightsAngle[2];
 uniform float skyLightIntensity;
+uniform float lightsAttenuation[2];
 
 // Material properties
 uniform float matDiffuse;
@@ -31,7 +32,7 @@ varying vec3 N;
 
 float attenuation(vec3 dir, float div) {
 	float dist = length(dir);
-	float radiance = 1.0/(1.0+pow(dist/div, 2.0));
+	float radiance = 1.0/(1.0+pow(dist * div / 100.0, 2.0));
 	return clamp(radiance*10.0, 0.0, 1.0); // * 10.0
 }
 
@@ -102,7 +103,7 @@ void main() {
                 //lambert(lightSurfaceNormal, -lightSpacePosNormalized) *
                 phong(p, n, lightSpacePos, i) *
 				influence(lightSpacePosNormalized, lightsAngle[i]) *
-				attenuation(lightSpacePos, 250.0) *
+				attenuation(lightSpacePos, lightsAttenuation[i]) *
                 illuminated *
 				vec3(1.0, 1.0, 1.0)
             );
