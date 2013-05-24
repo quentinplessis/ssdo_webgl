@@ -11,6 +11,8 @@
 		<script src="lib/Detector.js"></script>
 		<script src="lib/TrackballControls.js"></script>
 		<script src="lib/stats.min.js"></script>
+		<script src="lib/MTLLoader.js"></script>
+		<script src="lib/OBJMTLLoader.js"></script>
 		<script src="OFF.js"></script>
 		<script src="Shader.js"></script>
 		<script src="PhongShader.js"></script>
@@ -49,6 +51,7 @@
 		blankMaterial['matDiffuseColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
 		blankMaterial['matSpecularColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
 		blankMaterial['matEmissiveColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
+		blankMaterial['texture'] = null;
 		
 		var shaders = [], rtTextures = [];
 		var normalsAndDepthShader, normalsAndDepthTexture;
@@ -83,6 +86,8 @@
 				type: THREE.FloatType
 			};
 			
+		var blankTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+		var testTexture = THREE.ImageUtils.loadTexture('textures/avatar.jpg');
 	</script>
 	<script src="Controls.js"></script>
 	<script src="Initialization.js"></script>
@@ -136,6 +141,10 @@
 			else if (event.keyCode == 68) { // d
 				MODE = 'ssdo';
 				displayManager.display(customDisplays[MODE]);
+			}
+			else if (event.keyCode == 70) { // f
+				MODE = 'all';
+				displayManager.display({names: ['diffuseMap']});
 			}
 			else if (event.keyCode == 38) { // up
 				var pLocal = new THREE.Vector3(0, 0, -1);
@@ -192,7 +201,18 @@
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
 					diffuseMapShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-					objects[i].setMaterial(diffuseMapShader.createMaterial());
+					if (materials[i]['texture'] != null) {
+						diffuseMapShader.setUniform('isTextured', 'i', 1);
+						diffuseMapShader.setUniform('texture', 't', materials[i]['texture']);
+					}
+					else {
+						diffuseMapShader.setUniform('isTextured', 'i', 0);
+						diffuseMapShader.setUniform('texture', 't', null);
+					}
+					if (objects[i].setComposedMaterial == null)
+						objects[i].setMaterial(diffuseMapShader.createMaterial());
+					else
+						objects[i].setComposedMaterial(diffuseMapShader);
 				}
 				renderer.render(scene, camera, diffuseTexture, true);
 			}
@@ -223,11 +243,11 @@
 				renderer.render(scene, camera, coordsTexture, true);
 				
 				// ssdo 1st pass
-				ssdoQuad.setMaterial(ssdoDirectLightingShader.getMaterial());
+				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 				// ssdo 2nd pass
-				ssdoQuad.setMaterial(ssdoIndirectBounceShader.getMaterial());
-				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+				//ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
+				//renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 			}
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);

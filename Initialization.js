@@ -7,6 +7,7 @@ function processLights() {
 		lightsIntensity[i] = lights[i].getIntensity();
 		
 		lightsCameras[i] = new THREE.PerspectiveCamera(70.0, 1.0, 0.1, 1000.0);
+		//lightsCameras[i] = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000 );
 		lightsCameras[i].position = lightsPos[i];
 		lightsCameras[i].lookAt(lights[i].getLookAt()); 
 		
@@ -61,7 +62,7 @@ function initShaders() {
 	coordsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	
 	diffuseMapShader = new Shader();
-	diffuseMapShader.loadShader('shaders/default.vert', 'vertex');
+	diffuseMapShader.loadShader('shaders/diffuseMap.vert', 'vertex');
 	diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
 	diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	
@@ -141,9 +142,11 @@ function initScene() {
 	var radius = 50, segments = 16, rings = 16;
 	var sphereGeometry = new THREE.SphereGeometry(radius, segments, rings);
 	objects[0] = new THREE.Mesh(sphereGeometry);
+	objects[0].rotation.y = Math.PI / 2;
 	materials[0] = jQuery.extend(true, {}, blankMaterial);
 	materials[0]['matSpecular'] = 0.8;
 	materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
+	materials[0]['texture'] = testTexture;
 	scene.add(objects[0]);
 	//objects[0].add(camera);
 	
@@ -166,7 +169,7 @@ function initScene() {
 	objects[3].position.x = -80;
 	objects[3].position.z = 100;
 	objects[3].position.y = -50;
-	objects[3].rotation.x = - Math.PI / 2;
+	//objects[3].rotation.x = - Math.PI / 2;
 	materials[3] = jQuery.extend(true, {}, blankMaterial);
 	materials[3]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.0, 0.5, 1.0);
 	scene.add(objects[3]);
@@ -177,6 +180,44 @@ function initScene() {
 	materials[4] = jQuery.extend(true, {}, blankMaterial);
 	materials[4]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.5, 0.5, 1.0);
 	scene.add(objects[4]);
+	
+	var loader = new THREE.OBJMTLLoader();
+	loader.addEventListener('load', function (event) {
+		objects[5] = event.content;
+		objects[5].traverse(function (child) {
+			if (child instanceof THREE.Mesh) {
+				child.saveMap = child.material.map;
+			}
+		});
+		objects[5].setMaterial = function(material) {
+			this.traverse(function (child) {
+				if (child instanceof THREE.Mesh) {
+					child.setMaterial(material);
+				}
+			});
+		};
+		objects[5].setComposedMaterial = function(shader) {
+			this.traverse(function (child) {
+				if (child instanceof THREE.Mesh) {
+					if (child.material != null) {
+						shader.setUniform('isTextured', 'i', 1);
+						shader.setUniform('texture', 't', child.saveMap);
+						child.setMaterial(shader.createMaterial());
+					}
+					else {
+						shader.setUniform('isTextured', 'i', 0);
+						shader.setUniform('texture', 't', null);
+					}
+				}
+			});
+		}
+		materials[5] = jQuery.extend(true, {}, blankMaterial);
+		//materials[5]['matDiffuseColor'] = new THREE.Vector4(0.0, 0.0, 1.0, 1.0);
+		objects[5].position.y = -70;
+		objects[5].position.x = 70;
+		scene.add(objects[5]);
+	});
+	loader.load('models/obj/male02/male02.obj', 'models/obj/male02/male02_dds.mtl');
 	
 	//phongShader.setAttribute('displacement', 'f', []);
 	// now populate the array of attributes
@@ -200,7 +241,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(rtTextures['phong'], 'phong');
 	displayManager.addSimpleTexture(rtTextures['expressive'], 'expressive');
 	displayManager.addSimpleTexture(rtTextures['diffuse'], 'diffuse');
-	displayManager.addSimpleTexture(diffuseTexture);
+	displayManager.addSimpleTexture(diffuseTexture, 'diffuseMap');
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
