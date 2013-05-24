@@ -3,9 +3,9 @@ precision highp float;
 #endif
 
 // 3D point properties
-varying vec4 P;
+varying vec4 worldPos;
 varying vec3 N;
 
 void main() {
-	gl_FragData[0] = P;
+	gl_FragData[0] = worldPos;
 }

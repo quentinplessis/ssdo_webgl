@@ -12,19 +12,14 @@ uniform float screenWidth;
 uniform float screenHeight;
 
 // camera properties
-varying mat4 modelViewM;
-uniform mat4 projectionM;
-varying mat4 fullMatrix;
+uniform mat4 cameraProjectionM;
+uniform mat4 cameraViewMatrix;
 //uniform vec3 cameraPosition;
 
 // lights properties
 uniform vec3 lightsPos[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
-
-// 3D point properties
-varying vec4 P;
-varying vec3 N;
 
 float linearizeDepth(float z) {
 	float n = 0.1;
@@ -58,6 +53,7 @@ float rng(float x)        { return fract(x*1.0/41.0); }
 	}
 }*/
 
+
 vec4 spacePos(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
 	return texture2D(positionsBuffer, uv);
@@ -73,10 +69,17 @@ vec4 matDiffusion(vec2 screenPos) {
 	return texture2D(diffuseTexture, uv);
 }
 
+//Pseudo random function
+float rand(vec2 co)
+{
+	return fract(sin(dot(co.xy,vec2(12.9898,78.233)))*43.5453);
+}
+
 void main() 
 {
 	vec4 currentPos = spacePos(gl_FragCoord.xy);
-	if (currentPos.a == 0.0) { // the current point is not in the background
+	if (currentPos.a == 0.0) // the current point is not in the background
+	{
 		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 		vec3 position = currentPos.xyz;
 		vec3 normal = spaceNormal(gl_FragCoord.xy);
@@ -92,7 +95,7 @@ void main()
 		//Number of samples we use for the SSDO algorithm
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
-		const float rmax = 8.0;
+		const float rmax = 2.0;
 
 		vec3 directions[numberOfSamples];
 		vec3 samplesPosition[numberOfSamples];
@@ -120,22 +123,26 @@ void main()
 			directions[i] = sampleDirection;
 			
 			// random number
-			float r4 = rng(randH); randH = permute(randH);
-			//
-			samplesPosition[i] = position + 0.1*sampleDirection;
+			float r4 = rng(randH); randH = permute(randH); r4 *= rmax;
+			
+			samplesPosition[i] = position.xyz + r4*(sampleDirection.xyz);
 
 			//Samples are back projected to the image
-			samplesScreenSpacePosition[i] = (projectionM * vec4(samplesPosition[i], 1.0)).xy;
+			samplesScreenSpacePosition[i] = (cameraProjectionM * cameraViewMatrix * vec4(samplesPosition[i], 1.0)).xy;
 			//(projectionM*modelViewM*vec4(samplesPosition[i], 1.0)).xy;
 
 			//Determines if the sample is visible or not
-			float distanceCameraSample = length(cameraPosition-samplesPosition[i]);
+			vec4 positionInCameraSpace = cameraViewMatrix*currentPos;
+			float distanceCameraSample = length((positionInCameraSpace).xyz);
 			vec4 sampleScreenPosToSpace = spacePos(samplesScreenSpacePosition[i]);
-			if (sampleScreenPosToSpace.a == 0.0) { // not in the background
+			if (sampleScreenPosToSpace.a == 0.0) // not in the background
+			{
 				vec3 sampleProjectionOnSurface = sampleScreenPosToSpace.xyz;
-		
-				float distanceCameraSampleProjection = length(cameraPosition-sampleProjectionOnSurface);
-				if(distanceCameraSample >= distanceCameraSampleProjection) //if the sample is inside the surface it is an occluder
+				
+				vec4 sampleProjectionInCameraSpace = cameraViewMatrix*vec4(sampleProjectionOnSurface,1.0);
+	
+				float distanceCameraSampleProjection = length((sampleProjectionInCameraSpace).xyz);
+				if(distanceCameraSample > distanceCameraSampleProjection) //if the sample is inside the surface it is an occluder
 				{
 					samplesVisibility[i] = false; //The sample is an occluder
 				}
@@ -157,5 +164,8 @@ void main()
 		}
 	}
 	else
-		gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+	{
+		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+	}
 }
+

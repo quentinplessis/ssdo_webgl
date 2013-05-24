@@ -284,7 +284,8 @@
 			ssdoDirectLightingShader.setUniform('lightsPos', 'v3v', lightsPos);
 			ssdoDirectLightingShader.setUniform('lightsColor', 'v4v', lightsColor);
 			ssdoDirectLightingShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-			ssdoDirectLightingShader.setUniform('projectionM', 'mat4', camera.projectionMatrix);
+			ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
+			ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
 			//ssdoDirectLightingShader.setUniform('cameraPosition', 'vec3', camera.position);
 			
 			ssdoIndirectBounceShader = new Shader();
