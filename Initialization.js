@@ -106,6 +106,7 @@ function initShaders() {
 	ssdoDirectLightingShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
 	ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
 	ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
+	ssdoDirectLightingShader.setUniform('cameraViewMatrixInverse', 'm4', camera.matrixWorld);
 	//ssdoDirectLightingShader.setUniform('cameraPosition', 'vec3', camera.position);
 			
 	ssdoIndirectBounceShader = new Shader();
@@ -120,7 +121,9 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('lightsPos', 'v3v', lightsPos);
 	ssdoIndirectBounceShader.setUniform('lightsColor', 'v4v', lightsColor);
 	ssdoIndirectBounceShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-	ssdoIndirectBounceShader.setUniform('projectionM', 'mat4', camera.projectionMatrix);
+	ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
+	ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
+	ssdoDirectLightingShader.setUniform('cameraViewMatrixInverse', 'm4', camera.matrixWorld);
 	//ssdoIndirectBounceShader.setUniform('cameraPosition', 'vec3', camera.position);
 }
 

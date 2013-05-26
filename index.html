@@ -70,7 +70,7 @@
 		customDisplays['ssdo'] = {cols: 2, rows: 1, 
 			names: ['ssdoDirect', 'ssdoFinal']};
 		
-		var MODE = 'shadows', ANIMATION = false;
+		var MODE = 'ssdo', ANIMATION = false;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -223,10 +223,10 @@
 				renderer.render(scene, camera, coordsTexture, true);
 				
 				// ssdo 1st pass
-				ssdoQuad.setMaterial(ssdoDirectLightingShader.getMaterial());
+				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 				// ssdo 2nd pass
-				ssdoQuad.setMaterial(ssdoIndirectBounceShader.getMaterial());
+				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 			}
 			// displays the scene
