@@ -26,12 +26,12 @@ function initControls() {
 	gui.add(text, 'message');
 	
 	var displaysFolder = gui.addFolder('Views');
-	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
+	displaysFolder.add(text, 'gridDisplayed', {'Texture': 'textured', 'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
 		MODE = value;
 		displayManager.display(customDisplays[MODE]);
 		render();
 	});
-	displaysFolder.add(text, 'viewDisplayed', {'Phong': 'phong', 'Expressive': 'expressive', 'Hard shadows': 'hardShadows'}).name('View').onChange(function(value) {
+	displaysFolder.add(text, 'viewDisplayed', {'Texture': 'diffuseMap', 'Phong': 'phong', 'Expressive': 'expressive', 'Hard shadows': 'hardShadows'}).name('View').onChange(function(value) {
 		MODE = 'all';
 		displayManager.display({names: [text.viewDisplayed]});
 		render();

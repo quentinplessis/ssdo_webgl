@@ -74,7 +74,9 @@ void main() {
 	vec3 n = normalize(N);
 	for (int i = 0 ; i < 2 ; i++) {
 		// P : position in world space
-		vec3 lightSpacePos = (lightsView[i] * worldPos).xyz;
+		vec4 lightSpacePos4 = lightsView[i] * worldPos;
+		//vec3 lightSpacePos = lightSpacePos4.xyz / lightSpacePos4.w;
+		vec3 lightSpacePos = lightSpacePos4.xyz;
 		vec3 lightSpacePosNormalized = normalize(lightSpacePos);
 		vec4 lightScreenSpacePos = lightsProj[i] * vec4(lightSpacePos, 1.0);
 		vec2 lightSSpacePosNormalized = lightScreenSpacePos.xy / lightScreenSpacePos.w;
@@ -91,7 +93,9 @@ void main() {
 			data = texture2D(shadowMap1, lightUV);
 		if (data.r == 0.0) // not in the background
 			storedDepth = data.a;
-			
+		
+		//float depth = clamp(storedDepth, 0.0, 1.0);
+		//float currentDepth = clamp(length(lightSpacePos), 0.0, 1.0);
 		float depth = clamp(storedDepth / lightFar, 0.0, 1.0);
 		float currentDepth = clamp(length(lightSpacePos) / lightFar, 0.0, 1.0);
 		

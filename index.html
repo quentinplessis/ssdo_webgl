@@ -11,7 +11,7 @@
 		<script src="lib/Detector.js"></script>
 		<script src="lib/TrackballControls.js"></script>
 		<script src="lib/stats.min.js"></script>
-		<script src="lib/MTLLoader.js"></script>
+		<script src="lib/MTLLoaderP.js"></script>
 		<script src="lib/OBJMTLLoader.js"></script>
 		<script src="OFF.js"></script>
 		<script src="Shader.js"></script>
@@ -56,6 +56,7 @@
 		var shaders = [], rtTextures = [];
 		var normalsAndDepthShader, normalsAndDepthTexture;
 		var diffuseMapShader, diffuseTexture;
+		var materialShader, materialTexture;
 		var coordsShader, coordsTexture;
 		
 		var shadowMaps = [], shadowMapsResolution = 64;
@@ -72,6 +73,8 @@
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows']};
 		customDisplays['ssdo'] = {cols: 2, rows: 1, 
 			names: ['ssdoDirect', 'ssdoFinal']};
+		customDisplays['textured'] = {names: ['diffuseMap']};
+		customDisplays['material'] = {names: ['material']};
 		
 		var MODE = 'shadows', ANIMATION = false;
 		
@@ -90,6 +93,8 @@
 		var testTexture = THREE.ImageUtils.loadTexture('textures/avatar.jpg');
 	</script>
 	<script src="Controls.js"></script>
+	<script src="Scene1.js"></script>
+	<script src="Scene2.js"></script>
 	<script src="Initialization.js"></script>
 	<script>
 		init();
@@ -107,6 +112,7 @@
 		}
 		
 		function keyDown(event) {
+			//alert(event.keyCode);
 			if (event.keyCode == 65) // a
 				ANIMATION = !ANIMATION;
 			else if (event.keyCode == 79) { // o
@@ -142,9 +148,13 @@
 				MODE = 'ssdo';
 				displayManager.display(customDisplays[MODE]);
 			}
-			else if (event.keyCode == 70) { // f
-				MODE = 'all';
-				displayManager.display({names: ['diffuseMap']});
+			else if (event.keyCode == 84) { // t
+				MODE = 'textured';
+				displayManager.display(customDisplays[MODE]);
+			}
+			else if (event.keyCode == 77) { // t
+				MODE = 'material';
+				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 38) { // up
 				var pLocal = new THREE.Vector3(0, 0, -1);
@@ -196,7 +206,7 @@
 				renderer.render(scene, camera, rtTextures['diffuse'], true);
 			}
 			
-			if (MODE == 'all' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'textured') {
 				// 5th rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -215,6 +225,28 @@
 						objects[i].setComposedMaterial(diffuseMapShader);
 				}
 				renderer.render(scene, camera, diffuseTexture, true);
+			}
+			
+			if (MODE == 'material') {
+				for (var i = 0 ; i < objects.length ; i++) {
+					if (objects[i].setComposedMaterial == null) {
+						materialShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+						materialShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);	
+					
+						if (materials[i]['texture'] != null) {
+							materialShader.setUniform('isTextured', 'i', 1);
+							materialShader.setUniform('texture', 't', materials[i]['texture']);
+						}
+						else {
+							materialShader.setUniform('isTextured', 'i', 0);
+							materialShader.setUniform('texture', 't', null);
+						}
+						objects[i].setMaterial(materialShader.createMaterial());
+					}
+					else
+						objects[i].setComposedMaterial(materialShader);
+				}
+				renderer.render(scene, camera, materialTexture, true);
 			}
 			
 			if (MODE == 'all' || MODE == 'shadows') {
