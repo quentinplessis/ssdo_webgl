@@ -12,8 +12,8 @@ varying vec2 vUv;
 void main() {
 	P = modelViewMatrix * vec4(position, 1.0);
 	N = normal;
-	if (isTextured == 1)
-		vUv = uv;
+	//if (isTextured == 1)
+		//vUv = uv;
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }

@@ -4,11 +4,11 @@ function loadScene1() {
 	var radius = 50, segments = 16, rings = 16;
 	var sphereGeometry = new THREE.SphereGeometry(radius, segments, rings);
 	objects[0] = new THREE.Mesh(sphereGeometry);
-	objects[0].rotation.y = Math.PI / 2;
+	//objects[0].rotation.y = Math.PI / 2;
 	materials[0] = jQuery.extend(true, {}, blankMaterial);
 	materials[0]['matSpecular'] = 0.3;
 	materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
-	materials[0]['texture'] = testTexture;
+	//materials[0]['texture'] = testTexture;
 	scene.add(objects[0]);
 	//objects[0].add(camera);
 	
@@ -79,5 +79,5 @@ function loadScene1() {
 		objects[5].position.x = 70;
 		scene.add(objects[5]);
 	});
-	loader.load('models/obj/female02/female02.obj', 'models/obj/female02/female02.mtl');
+	//loader.load('models/obj/female02/female02.obj', 'models/obj/female02/female02.mtl');
 }

@@ -71,12 +71,12 @@
 		customDisplays['all'] = {cols: 4, rows: 3, all: true};
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows']};
-		customDisplays['ssdo'] = {cols: 2, rows: 1, 
-			names: ['ssdoDirect', 'ssdoFinal']};
+		customDisplays['ssdo'] = {cols: 2, rows: 2, 
+			names: ['shadowMap1', 'hardShadows', 'ssdoDirect', 'ssdoFinal']};
 		customDisplays['textured'] = {names: ['diffuseMap']};
 		customDisplays['material'] = {names: ['material']};
 		
-		var MODE = 'shadows', ANIMATION = false;
+		var MODE = 'ssdo', ANIMATION = false;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -249,13 +249,15 @@
 				renderer.render(scene, camera, materialTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'shadows') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
 				renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
 				renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
-				
+			}
+			
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo') {
 				for (var i = 0 ; i < objects.length ; i++) {
 					hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
 					hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
@@ -278,8 +280,8 @@
 				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 				// ssdo 2nd pass
-				//ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
-				//renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 			}
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);

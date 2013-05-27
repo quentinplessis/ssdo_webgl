@@ -11,10 +11,10 @@ uniform int isTextured;
 // 3D point properties
 varying vec4 P;
 varying vec3 N;
-varying vec2 vUv;
+//varying vec2 vUv;
 
 void main() {
-	gl_FragColor = matDiffuse * matDiffuseColor;
-	if (isTextured == 1)
-		gl_FragColor *= texture2D(texture, vUv);
+	gl_FragColor = vec4((matDiffuse * matDiffuseColor).xyz, 1.0);
+	//if (isTextured == 1)
+		//gl_FragColor *= texture2D(texture, vUv);
 }
