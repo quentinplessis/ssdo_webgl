@@ -27,11 +27,6 @@ vec4 spacePos(vec2 screenPos) {
 
 vec3 spaceNormal(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);	
-//	vec4 normalWorldSpace4 = (cameraViewMatrix* vec4(texture2D(normalsAndDepthBuffer, uv).xyz, 1.0));
-//	vec3 normalWorldSpace = normalWorldSpace4.xyz;
-//	vec3 normalWorldSpace = normalWorldSpace4.xyz/normalWorldSpace4.w;
-//	normalWorldSpace = normalize(normalWorldSpace);
-//	return normalWorldSpace;	
 	return normalize(texture2D(normalsAndDepthBuffer, uv).xyz);
 }
 
@@ -60,7 +55,7 @@ void main()
 		//Number of samples we use for the SSDO algorithm
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
-		const float rmax = 1.0;
+		const float rmax = 0.5;
 
 		vec3 directions[numberOfSamples];
 		vec3 samplesPosition[numberOfSamples];
@@ -110,7 +105,6 @@ void main()
 				if(distanceCameraSample > (distanceCameraSampleProjection+0.01)) //if the sample is inside the surface it is an occluder
 				{
 					samplesVisibility[i] = false; //The sample is an occluder
-					gl_FragColor =+ vec4(0.0,0.0,1.0,1.0);
 				}
 				else
 				{
@@ -119,12 +113,13 @@ void main()
 
 					//compute the incoming radiance coming in the direction sampleDirection
 					vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
-					for(int j = 0 ; j < 1 ; j++)
+					for(int j = 0 ; j < 2 ; j++)
 					{
 						//Visibility Test...
 						vec3 lightDirection = position - lightsPos[j];
 						lightDirection = normalize(lightDirection);
-						incomingRadiance += max(dot(sampleDirection, lightDirection),0.0)*lightsIntensity[j]*lightsColor[j];
+						//Radiance is positive :  in the dot product we use -lightDirection
+						incomingRadiance += max(dot(sampleDirection, -lightDirection),0.0)*lightsIntensity[j]*lightsColor[j];
 					}
 				float nombre = 1.0;
 				gl_FragColor +=1.0/nombre * 2.0*matDiffusion(gl_FragCoord.xy)*max(dot(normal, sampleDirection),0.0)*incomingRadiance/numberOfSamplesF;

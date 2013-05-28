@@ -86,10 +86,11 @@ void main() {
 				sampleDirection = -sampleDirection;
 			}
 			directions[i] = sampleDirection;
+			sampleDirection = -normal;
 			// random number
 			float r4 = rand(vec2(r3,r3))*rmax;
 			samplesPosition[i] = position + r4*sampleDirection;
-
+			
 			//Samples are back projected to the image
 			samplesScreenSpacePosition[i] = (cameraProjectionM * cameraViewMatrix * vec4(samplesPosition[i], 1.0));
 			vec2 sampleScreenSpacePositionNormalized = samplesScreenSpacePosition[i].xy/(samplesScreenSpacePosition[i].w);
@@ -116,7 +117,7 @@ void main() {
 					distanceSenderReceiver = 1.0;
 				}
 
-				if(distanceCameraSample >= distanceCameraSampleProjection && dot(normal, sampleNormalOnSurface) < 0.0) //if the sample is inside the surface it is an occluder
+				if(distanceCameraSample >= distanceCameraSampleProjection) //if the sample is inside the surface it is an occluder
 				{
 					samplesVisibility[i] = false; //The sample is an occluder
 					vec4 directLightingVector = directLighting(sampleUV);
@@ -126,10 +127,12 @@ void main() {
 						//Visibility Test...
 						vec3 lightDirection = position - lightsPos[j];
 						lightDirection = normalize(lightDirection);
-						incomingRadiance += max(dot(sampleDirection, lightDirection),0.0)*lightsIntensity[j]*lightsColor[j];
+						//Radiance is positive :  in the dot product we use -lightDirection
+						incomingRadiance += max(dot(sampleDirection, -lightDirection),0.0)*lightsIntensity[j]*lightsColor[j];
 					}
 
-					gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*incomingRadiance*directLightingVector;
+					gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*dot(sampleDirection, sampleNormalOnSurface)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+				//	gl_FragColor = vec4(1.0,0.0,0.0,1.0);
 				}
 				else
 				{
