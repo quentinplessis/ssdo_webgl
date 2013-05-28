@@ -6,7 +6,7 @@ var PhongShader = Class.create(Shader, {
         this.setUniform('lightsPos', 'v3v', lightsPos);
 		this.setUniform('lightsColor', 'v4v', lightsColor);
 		this.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-		this.loadShader('shaders/default.vert', 'vertex');
+		this.loadShader('shaders/worldCoords.vert', 'vertex');
 		this.loadShader('shaders/phong.frag', 'fragment');
     },
 	use: function(matDiffuse, matSpecular, shininess, matDiffuseColor, matSpecularColor, matEmissive, matEmissiveColor) {

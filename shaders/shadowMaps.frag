@@ -2,10 +2,10 @@
 precision highp float;
 #endif
 
-varying vec4 P;
-varying vec3 N;
+// 3D point properties
+varying vec4 camSpacePos;
+varying vec3 worldNormal;
 
 void main() {
-	float depth = length(P.xyz);
-	gl_FragData[0] = vec4(0.0, 0.0, 0.0, depth);
+	gl_FragData[0] = vec4(0.0, 0.0, 0.0, length(camSpacePos.xyz));
 }

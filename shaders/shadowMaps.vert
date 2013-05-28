@@ -2,12 +2,12 @@
 precision highp float;
 #endif
 
-varying vec4 P;
-varying vec3 N;
+varying vec4 camSpacePos;
+varying vec3 worldNormal;
 
 void main() {
-	P = modelViewMatrix * vec4(position, 1.0);
-	N = normalMatrix * normal;
+	camSpacePos = modelViewMatrix * vec4(position, 1.0);
+	worldNormal = normalize(vec3(modelMatrix * vec4(normal, 0.0)));
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }

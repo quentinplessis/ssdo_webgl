@@ -6,7 +6,7 @@ function loadScene1() {
 	objects[0] = new THREE.Mesh(sphereGeometry);
 	//objects[0].rotation.y = Math.PI / 2;
 	materials[0] = jQuery.extend(true, {}, blankMaterial);
-	materials[0]['matSpecular'] = 0.3;
+	materials[0]['matSpecular'] = 0.5;
 	materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
 	//materials[0]['texture'] = testTexture;
 	scene.add(objects[0]);
@@ -25,15 +25,19 @@ function loadScene1() {
 	objects[2].position.x = 150;
 	materials[2] = jQuery.extend(true, {}, blankMaterial);
 	materials[2]['matDiffuseColor'] = new THREE.Vector4(0.2, 1.0, 0.2, 1.0);
+	materials[2]['matSpecular'] = 0.8;
+	//materials[2]['matSpecularColor'] = new THREE.Vector4(0.0, 0.0, 1.0, 1.0);
 	scene.add(objects[2]);
 	
 	loadOFF('models/ram.off');
 	objects[3].position.x = -80;
 	objects[3].position.z = 100;
 	objects[3].position.y = -50;
-	//objects[3].rotation.x = - Math.PI / 2;
+	objects[3].rotation.x = - Math.PI / 2;
 	materials[3] = jQuery.extend(true, {}, blankMaterial);
 	materials[3]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.0, 0.5, 1.0);
+	//materials[3]['matEmissiveColor'] = new THREE.Vector4(0.0, 1.0, 0, 1.0);
+	//materials[3]['matEmissive'] = 0.8;
 	scene.add(objects[3]);
 	
 	loadOFF('models/ground.off', 200);
@@ -41,6 +45,7 @@ function loadScene1() {
 	objects[4].rotation.x = - Math.PI / 2;
 	materials[4] = jQuery.extend(true, {}, blankMaterial);
 	materials[4]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.5, 0.5, 1.0);
+	materials[4]['matSpecular'] = 0.0;
 	scene.add(objects[4]);
 	
 	var loader = new THREE.OBJMTLLoader();

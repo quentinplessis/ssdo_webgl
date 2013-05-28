@@ -14,11 +14,6 @@ function processLights() {
 		lightsView[i] = lightsCameras[i].matrixWorldInverse;
 		lightsProj[i] = lightsCameras[i].projectionMatrix;
 		
-		lightsRot[i] = new THREE.Matrix3();
-		lightsRot[i].getNormalMatrix(lightsView[i]);
-		lightsRot[i] = lightsCameras[i].rotation;
-		//lightsCameras[i].updateMatrix();
-		
 		lightsAngle[i] = lightDefaultAngle;
 		lightsAttenuation[i] = lightDefaultAttenuation;
 	
@@ -87,12 +82,10 @@ function initShaders() {
 	materialShader.loadShader('shaders/material.frag', 'fragment');
 	materialTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	
-	
 	// shadow mapping
 	shadowMapsShader = new Shader();
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
 	shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
-	//shadowMapsShader.setUniform('lightsProj', 'm4v', lightsProj);
 	
 	// hard shadows
 	hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -104,7 +97,6 @@ function initShaders() {
 	hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 	hardShadowsShader.setUniform('lightsView', 'm4v', lightsView);
 	hardShadowsShader.setUniform('lightsProj', 'm4v', lightsProj);
-	hardShadowsShader.setUniform('lightsRot', 'm3v', lightsRot);
 	hardShadowsShader.setUniform('lightsPos', 'v3v', lightsPos);
 	hardShadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
 	hardShadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
@@ -129,8 +121,6 @@ function initShaders() {
 	ssdoDirectLightingShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
 	ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
 	ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
-	ssdoDirectLightingShader.setUniform('cameraViewMatrixInverse', 'm4', camera.matrixWorld);
-	//ssdoDirectLightingShader.setUniform('cameraPosition', 'vec3', camera.position);
 	
 	ssdoFinalBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	ssdoIndirectBounceShader = new Shader();
@@ -147,8 +137,6 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
 	ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
 	ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
-	ssdoDirectLightingShader.setUniform('cameraViewMatrixInverse', 'm4', camera.matrixWorld);
-	//ssdoIndirectBounceShader.setUniform('cameraPosition', 'vec3', camera.position);
 }
 
 // Initialization of the world
@@ -173,8 +161,6 @@ function initScene() {
 	for(var v = 0; v < vertices.length; v++) {
 		values.push(Math.random() * 30);
 	}*/
-	
-	
 }
 
 function initDisplayManager() {
