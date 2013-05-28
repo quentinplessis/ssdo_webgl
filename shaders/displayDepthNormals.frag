@@ -3,17 +3,12 @@ precision highp float;
 #endif
 
 uniform sampler2D texture;
-
-// 3D point properties
-varying vec4 P;
-varying vec3 N;
-
 varying vec2 vUv;
 
-float linearizeDepth(float z) {
+float adaptDepth(float z) {
 	float n = 0.1;
-	float f = 100.0;
-	return (2.0 * n) / (f + n - z * (f  -n));
+	float f = 1000.0;
+	return (z - n) / (f - n);
 }
 
 void main() {
@@ -21,11 +16,11 @@ void main() {
 	vec4 data = texture2D(texture, vUv);
 	
 	if (vUv.x < 0.5) {
-		float depth = linearizeDepth(data.a);
+		float depth = adaptDepth(data.a);
 		gl_FragColor = vec4(depth, depth, depth, 1.0);
 	}
 	else {
-		vec3 coloredNormal = (1.0 + data.rgb) * 0.5;
+		vec3 coloredNormal = data.rgb * 0.5 + 0.5;
 		gl_FragColor = vec4(coloredNormal, 1.0);
 	}
 }

@@ -9,8 +9,8 @@ uniform sampler2D texture;
 uniform int isTextured;
 
 // 3D point properties
-varying vec4 P;
-varying vec3 N;
+varying vec4 camSpacePos;
+varying vec3 worldNormal;
 varying vec2 vUv;
 
 void main() {

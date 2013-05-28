@@ -14,8 +14,6 @@ uniform float screenHeight;
 // camera properties
 uniform mat4 cameraProjectionM;
 uniform mat4 cameraViewMatrix;
-uniform mat4 cameraViewMatrixInverse;
-//uniform vec3 cameraPosition;
 
 // lights properties
 uniform vec3 lightsPos[2];

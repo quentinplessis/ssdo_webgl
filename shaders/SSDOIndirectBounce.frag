@@ -15,17 +15,11 @@ uniform float screenHeight;
 // camera properties
 uniform mat4 cameraProjectionM;
 uniform mat4 cameraViewMatrix;
-uniform mat4 cameraViewMatrixInverse;
-//uniform vec3 cameraPosition;
 
 // lights properties
 uniform vec3 lightsPos[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
-
-// 3D point properties
-varying vec4 P;
-varying vec3 N;
 
 vec4 spacePos(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
@@ -34,12 +28,8 @@ vec4 spacePos(vec2 screenPos) {
 
 vec3 spaceNormal(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);	
-	vec3 normalWorldSpace = (cameraViewMatrixInverse* vec4(texture2D(normalsAndDepthBuffer, uv).xyz, 1.0)).xyz;
-	normalWorldSpace = -normalize(normalWorldSpace);
-	return normalWorldSpace;	
-//	return texture2D(normalsAndDepthBuffer, uv).xyz;
+	return texture2D(normalsAndDepthBuffer, uv).xyz;
 }
-
 
 vec4 matDiffusion(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
@@ -159,6 +149,4 @@ void main() {
 	{
 		gl_FragColor += vec4(0.2, 0.3, 0.4, 1.0);
 	}
-	
-	
 }

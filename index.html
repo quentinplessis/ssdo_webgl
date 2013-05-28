@@ -44,7 +44,7 @@
 		var camera, cameraRTT, controls, scene, sceneScreen, renderer, displayManager;
 		var lights = [], lightsPos = [], lightsColor = [], lightsIntensity = [];
 		var lightsAngle = [], lightsAttenuation = [];
-		var lightsCameras = [], lightsView = [], lightsProj = [], lightsRot = [];
+		var lightsCameras = [], lightsView = [], lightsProj = [];
 		var objects = [], materials = [];
 		var blankMaterial = []; blankMaterial['matDiffuse'] = 0.8; blankMaterial['matSpecular'] = 0.3;
 		blankMaterial['matEmissive'] = 0.0; blankMaterial['shininess'] = 5.0;
@@ -70,7 +70,7 @@
 		customDisplays['normal'] = {cols: 2	, rows: 3, names: ['depth', 'normals', 'depthAndNormals', 'diffuse', 'phong', 'expressive']};
 		customDisplays['all'] = {cols: 4, rows: 3, all: true};
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'shadowMap2', 'hardShadows']};
+			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'hardShadows', 'ssdoDirect', 'ssdoFinal']};
 		customDisplays['textured'] = {names: ['diffuseMap']};
@@ -88,7 +88,6 @@
 				format: THREE.RGBAFormat,
 				type: THREE.FloatType
 			};
-			
 		var blankTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 		var testTexture = THREE.ImageUtils.loadTexture('textures/avatar.jpg');
 	</script>
@@ -183,8 +182,8 @@
 				renderer.render(scene, camera, normalsAndDepthTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'normal') {
-				// 2nd rendering : complete rendering
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows') {
+				// 2nd rendering : phong rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					shaders['phong'].use(materials[i]['matDiffuse'], materials[i]['matSpecular'], materials[i]['shininess'], materials[i]['matDiffuseColor'], materials[i]['matSpecularColor'], materials[i]['matEmissive'], materials[i]['matEmissiveColor']);
 					objects[i].setMaterial(shaders['phong'].createMaterial());
@@ -313,7 +312,8 @@
 						direction = -1;
 					if (objects[0].position.y <= -50)
 						direction = 1;
-					objects[0].position.y += direction * 5;
+					objects[0].position.y += direction * 3.0;
+					//objects[2].rotation.y += direction * 5 / 100;
 					lastTime = currentTime;
 					render();
 				}

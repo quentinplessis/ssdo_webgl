@@ -5,13 +5,13 @@ precision highp float;
 uniform int isTextured;
 uniform sampler2D texture;
 
-varying vec4 P;
-varying vec3 N;
+varying vec4 camSpacePos;
+varying vec3 worldNormal;
 varying vec2 vUv;
 
 void main() {
-	P = modelViewMatrix * vec4(position, 1.0);
-	N = normal;
+	camSpacePos = modelViewMatrix * vec4(position, 1.0);
+	worldNormal = normalize(vec3(modelMatrix * vec4(normal, 1.0)));
 	//if (isTextured == 1)
 		//vUv = uv;
 

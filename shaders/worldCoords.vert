@@ -10,11 +10,11 @@ precision highp float;
 	// projectionMatrix to go from cam space to screen space
 
 varying vec4 worldPos;
-varying vec3 N;
+varying vec3 worldNormal;
 
 void main() {
 	worldPos = modelMatrix * vec4(position, 1.0);
-	N = normalMatrix * normal;
+	worldNormal = normalize(vec3(modelMatrix * vec4(normal, 0.0)));
 
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }

@@ -2,7 +2,7 @@
 precision highp float;
 #endif
 
-// lights properties
+// Lights properties
 uniform vec3 lightsPos[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
@@ -17,15 +17,15 @@ uniform vec4 matSpecularColor;
 uniform vec4 matEmissiveColor;
 
 // 3D point properties
-varying vec4 P;
-varying vec3 N;
+varying vec4 worldPos;
+varying vec3 worldNormal;
 
 void main() {
 	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 	
-	vec3 p = vec3(P);
-	vec3 n = normalize(N);
-	vec3 v = normalize(-p);
+	vec3 p = vec3(worldPos);
+	vec3 n = normalize(worldNormal);
+	vec3 v = normalize(cameraPosition - p);
 	
 	// for each light
 	for (int i = 0 ; i < 2 ; i++) {
@@ -34,7 +34,7 @@ void main() {
 		vec3 r = reflect(-l, n);
 		float spec = max(dot(r, v), 0.0);
 		spec = pow(spec, shininess);
-		spec = max(0.0, spec);
+		spec = max(spec, 0.0);
 		
 		gl_FragColor +=
 			(diffuse * matDiffuse * matDiffuseColor
