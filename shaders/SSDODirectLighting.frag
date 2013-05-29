@@ -56,6 +56,7 @@ void main()
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
 		const float rmax = 0.5;
+		float random = rand(vec2(1.0, 4.8));
 
 		vec3 directions[numberOfSamples];
 		vec3 samplesPosition[numberOfSamples];
@@ -69,7 +70,7 @@ void main()
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			float r1 =rand(vec2(1.0,4.8));
+			float r1 =rand(vec2(random, random));
 			float r2 = rand(vec2(r1,r1));
 			float r3 = rand(vec2(r2,r2));
 			vec3 sampleDirection = vec3(r1, r2, r3);
@@ -83,6 +84,7 @@ void main()
 		
 			// random number
 			float r4 = rand(vec2(r3,r3))*rmax;
+			random = r4; //The random numbers will be different in the next loop
 			samplesPosition[i] = position.xyz + r4*(sampleDirection.xyz);
 
 			//Samples are back projected to the image
