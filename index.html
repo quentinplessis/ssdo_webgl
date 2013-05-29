@@ -59,7 +59,7 @@
 		var materialShader, materialTexture;
 		var coordsShader, coordsTexture;
 		
-		var shadowMaps = [], shadowMapsResolution = 64;
+		var shadowMaps = [], shadowMapsResolution = 256;
 		var hardShadowsShader, hardShadowsTexture;
 		
 		var ssdoScene, ssdoQuad;
@@ -105,6 +105,10 @@
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoDirectLightingShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoIndirectBounceShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 			displayManager.organize();
