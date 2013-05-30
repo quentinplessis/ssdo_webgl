@@ -58,14 +58,13 @@ void main()
 		normal = normalize(normal);	
 
 		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 8;
-		const float numberOfSamplesF = 8.0;
-		const float rmax = 1.0;
-		float random = rand(vec2(1.0, 4.8));
+		const int numberOfSamples = 64;
+		const float numberOfSamplesF = 64.0;
+		const float rmax = 5.0;
+		float random = rand(position.xy);
 		
 		vec3 directions[numberOfSamples];
 		vec3 samplesPosition[numberOfSamples];
-		//	vec4 samplesScreenSpacePosition[numberOfSamples];
 		vec4 projectionInCamSpaceSample[numberOfSamples];
 
 		//samplesVisibility[i] = true if sample i is not occulted
@@ -76,9 +75,9 @@ void main()
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			float r1 =rand(vec2(random, random));
-			float r2 = rand(vec2(r1,r1));
-			float r3 = rand(vec2(r2,r2));
+			float r1 =rand(vec2(random, position.x));
+			float r2 = rand(vec2(r1,position.y));
+			float r3 = rand(vec2(r2,position.z));
 			vec3 sampleDirection = vec3(r1, r2, r3);
 			sampleDirection = normalize(sampleDirection);
 
@@ -90,7 +89,7 @@ void main()
 		//	sampleDirection = normal;
 	//		sampleDirection = -normal;	
 			// random number
-			float r4 = rand(vec2(r3,r3))*rmax;
+			float r4 = rand(vec2(r3,position.z))*rmax;
 			random = r4; //The random numbers will be different in the next loop
 	//		r4 = 0.1;
 			samplesPosition[i] = position + r4*sampleDirection;
@@ -130,7 +129,7 @@ void main()
 
 						//compute the incoming radiance coming in the direction sampleDirection
 						vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
-						for(int j = 0 ; j < 2 ; j++)
+						for(int j = 0 ; j < 1 ; j++)
 						{
 							//Visibility Test...
 							vec4 lightSpacePos4 = lightsView[j] * vec4(samplesPosition[i],1.0);

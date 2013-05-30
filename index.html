@@ -65,6 +65,7 @@
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
 		var ssdoIndirectBounceShader, ssdoFinalBuffer;
+		var ssdoBlurShader, ssdoBlurBuffer;
 		
 		var customDisplays = [];
 		customDisplays['normal'] = {cols: 2	, rows: 3, names: ['depth', 'normals', 'depthAndNormals', 'diffuse', 'phong', 'expressive']};
@@ -72,7 +73,7 @@
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'hardShadows', 'ssdoDirect', 'ssdoFinal']};
+			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
 		customDisplays['textured'] = {names: ['diffuseMap']};
 		customDisplays['material'] = {names: ['material']};
 		
@@ -285,6 +286,10 @@
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+
+				// ssdo blur pass
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
 			}
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);

@@ -145,6 +145,16 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 	ssdoIndirectBounceShader.setUniform('lightsView', 'm4v', lightsView);
 	ssdoDirectLightingShader.setUniform('lightsProj', 'm4v', lightsProj);
+
+	ssdoBlurBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	ssdoBlurShader = new Shader();
+	ssdoBlurShader.setUniform('screenWidth', 'f', window.innerWidth);
+	ssdoBlurShader.setUniform('screenHeight', 'f', window.innerHeight);
+	ssdoBlurShader.setUniform('positionsBuffer', 't', coordsTexture);
+	ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoFinalBuffer);
+	ssdoBlurShader.loadShader('shaders/ssdo.vert', 'vertex');
+	ssdoBlurShader.loadShader('shaders/ssdoBlur.frag', 'fragment');
+
 }
 
 // Initialization of the world
@@ -189,6 +199,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
 	displayManager.addSimpleTexture(directLightBuffer, 'ssdoDirect');
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
+	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');
 	displayManager.display(customDisplays[MODE]);
 }
 
