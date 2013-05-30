@@ -23,7 +23,7 @@ vec4 ssdoBufferValue(vec2 screenPos) {
 
 void main()
 {
-	int patchSize = 5;
+	int patchSize = 4;
 	vec4 currentPos = spacePos(gl_FragCoord.xy);
 	vec3 position = currentPos.xyz;
 	vec4 result = vec4(0.0,0.0,0.0,1.0);

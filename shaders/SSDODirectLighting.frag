@@ -58,9 +58,9 @@ void main()
 		normal = normalize(normal);	
 
 		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 64;
-		const float numberOfSamplesF = 64.0;
-		const float rmax = 5.0;
+		const int numberOfSamples = 16;
+		const float numberOfSamplesF = 16.0;
+		const float rmax = 90.0;
 		float random = rand(position.xy);
 		
 		vec3 directions[numberOfSamples];
@@ -182,12 +182,12 @@ void main()
 				}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
 				else
 				{
-					gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+				//	gl_FragColor = vec4(1.0,0.0,0.0,1.0);
 				}
 			}//End SampleUV between  0.0 and 0.1
 			else
 			{
-				gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
+			//	gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
 			}
 		}//End for on samples
 	}//End if (currentPos.a == 0.0) // the current point is not in the background
