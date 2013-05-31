@@ -35,19 +35,19 @@ function loadLights1() {
 }
 function loadLights2() {
 	lights[0] = new Light(
-		new THREE.Vector3(250, 200, 180),
+		new THREE.Vector3(-500, 1000, 0),
 		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
 		1.0
 	);
 	lights[1] = new Light(
-		new THREE.Vector3(-200, 400, 150),
+		new THREE.Vector3(110, 50, 0),
 		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
 		1.0
 	);
 }
 
 function initLights() {
-	loadLights1();
+	loadLights2();
 	processLights();
 }
 
@@ -78,9 +78,21 @@ function initShaders() {
 	diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	
 	materialShader = new Shader();
-	materialShader.loadShader('shaders/diffuseMap.vert', 'vertex');
+	materialShader.loadShader('shaders/material.vert', 'vertex');
 	materialShader.loadShader('shaders/material.frag', 'fragment');
+	materialShader.setUniform('lightsPos', 'v3v', lightsPos);
+	materialShader.setUniform('lightsColor', 'v4v', lightsColor);
+	materialShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
 	materialTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	
+	texturedPhong = new Shader();
+	texturedPhong.setUniform('lightsPos', 'v3v', lightsPos);
+	texturedPhong.setUniform('lightsColor', 'v4v', lightsColor);
+	texturedPhong.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+	texturedPhong.loadShader('shaders/texturedWorldCoords.vert', 'vertex');
+	texturedPhong.loadShader('shaders/texturedPhong.frag', 'fragment');
+    texturedPhong.setUniform('matDiffusion', 't', materialShader);
+	texturedPhongTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	
 	// shadow mapping
 	shadowMapsShader = new Shader();
@@ -111,7 +123,7 @@ function initShaders() {
 	ssdoDirectLightingShader = new Shader();
 	ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
-	ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	ssdoDirectLightingShader.setUniform('diffuseTexture', 't', materialTexture);
 	ssdoDirectLightingShader.loadShader('shaders/ssdo.vert', 'vertex');
 	ssdoDirectLightingShader.loadShader('shaders/SSDODirectLighting.frag', 'fragment');
 	ssdoDirectLightingShader.setUniform('screenWidth', 'f', window.innerWidth);
@@ -129,7 +141,7 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('directLightBuffer', 't', directLightBuffer);
 	ssdoIndirectBounceShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoIndirectBounceShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
-	ssdoIndirectBounceShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	ssdoIndirectBounceShader.setUniform('diffuseTexture', 't', materialTexture);
 	ssdoIndirectBounceShader.setUniform('screenWidth', 'f', window.innerWidth);
 	ssdoIndirectBounceShader.setUniform('screenHeight', 'f', window.innerHeight);
 	ssdoIndirectBounceShader.setUniform('lightsPos', 'v3v', lightsPos);
@@ -151,8 +163,8 @@ function initScene() {
 	ssdoQuad = new THREE.Mesh(plane);
 	ssdoScene.add(ssdoQuad);
 	
-	loadScene1();
-	//loadScene2();
+	//loadScene1();
+	loadScene2();
 	
 	//phongShader.setAttribute('displacement', 'f', []);
 	// now populate the array of attributes
@@ -179,6 +191,7 @@ function initDisplayManager() {
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
+	displayManager.addSimpleTexture(texturedPhongTexture, 'texturedPhong');
 	displayManager.addSimpleTexture(directLightBuffer, 'ssdoDirect');
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
 	displayManager.display(customDisplays[MODE]);
@@ -200,9 +213,11 @@ function initCameraControls(cam) {
 // Initialization
 function init() {
 	camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
-	//camera.position.x = 200;
-	camera.position.y = 200;
-	camera.position.z = 300;
+	//camera.position.y = 200;
+	//camera.position.z = 300;
+	camera.position.x = -500;
+	camera.position.y = 800;
+	camera.position.z = 0;
 	
 	cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 	cameraRTT.position.z = 100;

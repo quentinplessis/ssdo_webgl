@@ -30,7 +30,7 @@ function loadScene2() {
 						var color = new THREE.Vector4((i % 2 == 0) ? 1.0 : 0.0, 1.0, 1.0, 1.0);
 						shader.setUniform('matDiffuseColor', 'v4', child.saveMaterial.params.diffuse);
 						shader.setUniform('matDiffuse', 'f', 1.0);
-						shader.setUniform('texture', 't', testTexture);
+						shader.setUniform('texture', 't', child.saveMaterial.params.diffuseMap);
 						var mat = shader.createMaterial();
 						child.setMaterial(mat);
 						i++;
@@ -48,5 +48,6 @@ function loadScene2() {
 		objects[0].position.x = 0;
 		scene.add(objects[0]);
 	});
+	//loader.load('models/obj/female02/female02.obj', 'models/obj/female02/female02.mtl');
 	loader.load('models/obj/sponza/sponza.obj', 'models/obj/sponza/sponza.mtl');
 }

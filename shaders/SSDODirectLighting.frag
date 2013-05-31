@@ -121,7 +121,7 @@ void main()
 						vec3 lightDirection = position - lightsPos[j];
 						lightDirection = normalize(lightDirection);
 						//Radiance is positive :  in the dot product we use -lightDirection
-						incomingRadiance += max(dot(sampleDirection, -lightDirection),0.0)*lightsIntensity[j]*lightsColor[j];
+						incomingRadiance += lightsIntensity[j]*lightsColor[j];
 					}
 				float nombre = 1.0;
 				gl_FragColor +=1.0/nombre * 2.0*matDiffusion(gl_FragCoord.xy)*max(dot(normal, sampleDirection),0.0)*incomingRadiance/numberOfSamplesF;

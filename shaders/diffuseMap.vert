@@ -11,7 +11,7 @@ varying vec2 vUv;
 
 void main() {
 	camSpacePos = modelViewMatrix * vec4(position, 1.0);
-	worldNormal = normalize(vec3(modelMatrix * vec4(normal, 1.0)));
+	worldNormal = normalize(vec3(modelMatrix * vec4(normal, 0.0)));
 	//if (isTextured == 1)
 		//vUv = uv;
 

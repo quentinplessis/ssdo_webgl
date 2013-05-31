@@ -8,7 +8,7 @@ function loadScene1() {
 	materials[0] = jQuery.extend(true, {}, blankMaterial);
 	materials[0]['matSpecular'] = 0.5;
 	materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
-	//materials[0]['texture'] = testTexture;
+	materials[0]['texture'] = testTexture;
 	scene.add(objects[0]);
 	//objects[0].add(camera);
 	

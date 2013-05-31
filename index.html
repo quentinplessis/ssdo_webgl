@@ -58,6 +58,7 @@
 		var diffuseMapShader, diffuseTexture;
 		var materialShader, materialTexture;
 		var coordsShader, coordsTexture;
+		var texturedPhong, texturedPhongTexture;
 		
 		var shadowMaps = [], shadowMapsResolution = 64;
 		var hardShadowsShader, hardShadowsTexture;
@@ -72,11 +73,11 @@
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'hardShadows', 'ssdoDirect', 'ssdoFinal']};
+			names: ['shadowMap1', 'texturedPhong', 'ssdoDirect', 'ssdoFinal']};
 		customDisplays['textured'] = {names: ['diffuseMap']};
 		customDisplays['material'] = {names: ['material']};
 		
-		var MODE = 'ssdo', ANIMATION = false;
+		var MODE = 'material', ANIMATION = false;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -226,7 +227,7 @@
 				renderer.render(scene, camera, diffuseTexture, true);
 			}
 			
-			if (MODE == 'material') {
+			if (MODE == 'material' || MODE == 'ssdo') {
 				for (var i = 0 ; i < objects.length ; i++) {
 					if (objects[i].setComposedMaterial == null) {
 						materialShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -270,6 +271,14 @@
 			
 			// SSDO
 			if (MODE == 'all' || MODE == 'ssdo') {
+				for (var i = 0 ; i < objects.length ; i++) {
+					texturedPhong.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+					texturedPhong.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+					texturedPhong.setUniform('shininess', 'f', materials[i]['shininess']);
+					objects[i].setMaterial(texturedPhong.createMaterial());
+				}
+				renderer.render(scene, camera, texturedPhongTexture, true);
+				
 				// computes 3D coords
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(coordsShader.getMaterial());

@@ -14,6 +14,9 @@ var FizzyText = function() {
 	this.lightAngle = lightDefaultAngle;
 	this.skyLightIntensity = skyLightIntensity;
 	this.lightAttenuation = lightDefaultAttenuation;
+	this.lightPosX = 0.0;
+	this.lightPosY = 0.0;
+	this.lightPosZ = 0.0;
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
 };
@@ -94,6 +97,30 @@ function initControls() {
 				lightsAttenuation[i] = value;
 		else
 			lightsAttenuation[text.selectedLight] = value;
+		render();
+	});
+	lightsFolder.add(text, 'lightPosX').name('X').onChange(function(value) {
+		if (text.allLights)
+			for (var i = 0 ; i < lights.length ; i++)
+				lightsPos[i].x = value;
+		else
+			lightsPos[text.selectedLight].x = value;
+		render();
+	});
+	lightsFolder.add(text, 'lightPosY').name('Y').onChange(function(value) {
+		if (text.allLights)
+			for (var i = 0 ; i < lights.length ; i++)
+				lightsPos[i].y = value;
+		else
+			lightsPos[text.selectedLight].y = value;
+		render();
+	});
+	lightsFolder.add(text, 'lightPosZ').name('Z').onChange(function(value) {
+		if (text.allLights)
+			for (var i = 0 ; i < lights.length ; i++)
+				lightsPos[i].z = value;
+		else
+			lightsPos[text.selectedLight].z = value;
 		render();
 	});
 	lightsFolder.open();
