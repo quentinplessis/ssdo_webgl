@@ -10,6 +10,9 @@
 		<script src="lib/three.js"></script>
 		<script src="lib/Detector.js"></script>
 		<script src="lib/TrackballControls.js"></script>
+		<script src="lib/FirstPersonControls.js"></script>
+		<script src="lib/FlyControls.js"></script>
+		<script src="lib/PointerLockControls.js"></script>
 		<script src="lib/stats.min.js"></script>
 		<script src="lib/MTLLoaderP.js"></script>
 		<script src="lib/OBJMTLLoader.js"></script>
@@ -39,6 +42,7 @@
 		var lightDefaultAngle = 60.0, skyLightIntensity = 0.1, 
 			lightDefaultAttenuation = 0.4, lightDefaultIntensity = 1.0;
 		var cameraSpeed = 10.0;
+		var clock = new THREE.Clock();
 		
 		var $container, stats;
 		var camera, cameraRTT, controls, scene, sceneScreen, renderer, displayManager;
@@ -60,24 +64,27 @@
 		var coordsShader, coordsTexture;
 		var texturedPhong, texturedPhongTexture;
 		
-		var shadowMaps = [], shadowMapsResolution = 64;
+		var shadowMaps = [], shadowMapsResolution = 256;
 		var hardShadowsShader, hardShadowsTexture;
 		
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
 		var ssdoIndirectBounceShader, ssdoFinalBuffer;
+		var ssdoBlurShader, ssdoBlurBuffer;
 		
 		var customDisplays = [];
-		customDisplays['normal'] = {cols: 2	, rows: 3, names: ['depth', 'normals', 'depthAndNormals', 'diffuse', 'phong', 'expressive']};
+		customDisplays['normal'] = {cols: 2	, rows: 3, 
+			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'phong']};
+		
 		customDisplays['all'] = {cols: 4, rows: 3, all: true};
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'texturedPhong', 'ssdoDirect', 'ssdoFinal']};
+			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
 		customDisplays['textured'] = {names: ['diffuseMap']};
 		customDisplays['material'] = {names: ['material']};
 		
-		var MODE = 'material', ANIMATION = false;
+		var MODE = 'ssdo', ANIMATION = false;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -106,6 +113,10 @@
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoDirectLightingShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoIndirectBounceShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 			displayManager.organize();
@@ -156,22 +167,6 @@
 				MODE = 'material';
 				displayManager.display(customDisplays[MODE]);
 			}
-			else if (event.keyCode == 38) { // up
-				var pLocal = new THREE.Vector3(0, 0, -1);
-				var pWorld = pLocal.applyMatrix4(camera.matrixWorld);
-				var dir = pWorld.sub(camera.position).normalize();
-				camera.position.x += cameraSpeed * dir.x;
-				camera.position.y += cameraSpeed * dir.y;
-				camera.position.z += cameraSpeed * dir.z;
-			}
-			else if (event.keyCode == 38) { // up
-				var pLocal = new THREE.Vector3(0, 0, -1);
-				var pWorld = pLocal.applyMatrix4(camera.matrixWorld);
-				var dir = pWorld.sub(camera.position).normalize();
-				camera.position.x += cameraSpeed * dir.x;
-				camera.position.y += cameraSpeed * dir.y;
-				camera.position.z += cameraSpeed * dir.z;
-			}
 			render();
 		}
 	
@@ -183,70 +178,78 @@
 				renderer.render(scene, camera, normalsAndDepthTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows') {
-				// 2nd rendering : phong rendering
-				for (var i = 0 ; i < objects.length ; i++) {
-					shaders['phong'].use(materials[i]['matDiffuse'], materials[i]['matSpecular'], materials[i]['shininess'], materials[i]['matDiffuseColor'], materials[i]['matSpecularColor'], materials[i]['matEmissive'], materials[i]['matEmissiveColor']);
-					objects[i].setMaterial(shaders['phong'].createMaterial());
-				}
-				renderer.render(scene, camera, rtTextures['phong'], true);
-				
-				// 3rd rendering : expressive rendering
-				for (var i = 0 ; i < objects.length ; i++) {
-					shaders['expressive'].use(materials[i]['matDiffuse'], materials[i]['shininess'], materials[i]['matDiffuseColor']);
-					objects[i].setMaterial(shaders['expressive'].createMaterial());
-				}
-				renderer.render(scene, camera, rtTextures['expressive'], true);
-			
-				// 4th rendering : diffuse material rendering
-				for (var i = 0 ; i < objects.length ; i++) {
-					shaders['diffuse'].use(materials[i]['matDiffuse'], materials[i]['matDiffuseColor']);
-					objects[i].setMaterial(shaders['diffuse'].createMaterial());
-				}
-				renderer.render(scene, camera, rtTextures['diffuse'], true);
-			}
-			
-			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'textured') {
-				// 5th rendering : diffuse map rendering
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo') {
+				// 2nd rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
 					diffuseMapShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-					if (materials[i]['texture'] != null) {
-						diffuseMapShader.setUniform('isTextured', 'i', 1);
-						diffuseMapShader.setUniform('texture', 't', materials[i]['texture']);
+					if (objects[i].composedObject) {
+						objects[i].setShaderMaterial(diffuseMapShader);
 					}
 					else {
-						diffuseMapShader.setUniform('isTextured', 'i', 0);
-						diffuseMapShader.setUniform('texture', 't', null);
-					}
-					if (objects[i].setComposedMaterial == null)
+						if (materials[i]['texture'] != null) {
+							diffuseMapShader.setUniform('isTextured', 'i', 1);
+							diffuseMapShader.setUniform('texture', 't', materials[i]['texture']);
+						}
+						else {
+							diffuseMapShader.setUniform('isTextured', 'i', 0);
+							diffuseMapShader.setUniform('texture', 't', null);
+						}
 						objects[i].setMaterial(diffuseMapShader.createMaterial());
-					else
-						objects[i].setComposedMaterial(diffuseMapShader);
+					}
 				}
 				renderer.render(scene, camera, diffuseTexture, true);
 			}
 			
-			if (MODE == 'material' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'normal') {
+				// 3rd rendering : diffuse rendering with lights
 				for (var i = 0 ; i < objects.length ; i++) {
-					if (objects[i].setComposedMaterial == null) {
-						materialShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-						materialShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);	
-					
-						if (materials[i]['texture'] != null) {
-							materialShader.setUniform('isTextured', 'i', 1);
-							materialShader.setUniform('texture', 't', materials[i]['texture']);
-						}
-						else {
-							materialShader.setUniform('isTextured', 'i', 0);
-							materialShader.setUniform('texture', 't', null);
-						}
-						objects[i].setMaterial(materialShader.createMaterial());
+					if (objects[i].composedObject) {
+						shaders['diffuse'].use(materials[i]['matDiffuse'], materials[i]['matDiffuseColor'], materials[i]['texture']);
+						objects[i].setShaderMaterial(shaders['diffuse']);
 					}
-					else
-						objects[i].setComposedMaterial(materialShader);
+					else {
+						shaders['diffuse'].use(materials[i]['matDiffuse'], materials[i]['matDiffuseColor'], materials[i]['texture']);
+						objects[i].setMaterial(shaders['diffuse'].createMaterial());
+					}
 				}
-				renderer.render(scene, camera, materialTexture, true);
+				renderer.render(scene, camera, rtTextures['diffuse'], true);
+			}
+			
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows') {
+				// 4th rendering : phong rendering
+				for (var i = 0 ; i < objects.length ; i++) {
+					if (objects[i].composedObject) {
+						shaders['phong'].use(materials[i]['matDiffuse'], materials[i]['matSpecular'], materials[i]['shininess'], materials[i]['matDiffuseColor'], materials[i]['matSpecularColor'], materials[i]['matEmissive'], materials[i]['matEmissiveColor'], materials[i]['texture']);
+						objects[i].setShaderMaterial(shaders['phong']);
+					}
+					else {
+						shaders['phong'].use(materials[i]['matDiffuse'], materials[i]['matSpecular'], materials[i]['shininess'], materials[i]['matDiffuseColor'], materials[i]['matSpecularColor'], materials[i]['matEmissive'], materials[i]['matEmissiveColor'], materials[i]['texture']);
+						objects[i].setMaterial(shaders['phong'].createMaterial());
+					}
+				}
+				renderer.render(scene, camera, rtTextures['phong'], true);
+			}
+			
+			if (MODE == 'all') { // || MODE == 'normal') {
+				// 5th rendering : expressive rendering
+				for (var i = 0 ; i < objects.length ; i++) {
+					if (objects[i].composedObject) {
+						shaders['expressive'].use(materials[i]['matDiffuse'], materials[i]['shininess'], materials[i]['matDiffuseColor']);
+						objects[i].setShaderMaterial(shaders['expressive']);
+					}
+					else {
+						shaders['expressive'].use(materials[i]['matDiffuse'], materials[i]['shininess'], materials[i]['matDiffuseColor']);
+						objects[i].setMaterial(shaders['expressive'].createMaterial());
+					}
+				}
+			}
+			
+			if (MODE == 'all' || MODE == 'ssdo') {
+				// 6th rendering : computes 3D coords
+				for (var i = 0 ; i < objects.length ; i++)
+					objects[i].setMaterial(coordsShader.getMaterial());
+				renderer.render(scene, camera, coordsTexture, true);
 			}
 			
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo') {
@@ -257,39 +260,39 @@
 				renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
 			}
 			
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'shadows') { // || MODE == 'ssdo') {
 				for (var i = 0 ; i < objects.length ; i++) {
-					hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-					hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
-					hardShadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
-					hardShadowsShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-					hardShadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
-					objects[i].setMaterial(hardShadowsShader.createMaterial());
+					if (objects[i].composedObject) {
+						//hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+						hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+						hardShadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
+						//hardShadowsShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+						hardShadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+						objects[i].setShaderMaterial(hardShadowsShader);
+					}
+					else {
+						//hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+						hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+						hardShadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
+						//hardShadowsShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+						hardShadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+						objects[i].setMaterial(hardShadowsShader.createMaterial());
+					}
 				}
 				renderer.render(scene, camera, hardShadowsTexture, true);
 			}
 			
 			// SSDO
 			if (MODE == 'all' || MODE == 'ssdo') {
-				for (var i = 0 ; i < objects.length ; i++) {
-					texturedPhong.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
-					texturedPhong.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
-					texturedPhong.setUniform('shininess', 'f', materials[i]['shininess']);
-					objects[i].setMaterial(texturedPhong.createMaterial());
-				}
-				renderer.render(scene, camera, texturedPhongTexture, true);
-				
-				// computes 3D coords
-				for (var i = 0 ; i < objects.length ; i++)
-					objects[i].setMaterial(coordsShader.getMaterial());
-				renderer.render(scene, camera, coordsTexture, true);
-				
 				// ssdo 1st pass
 				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+				// ssdo blur pass
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
 			}
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
@@ -327,7 +330,7 @@
 					render();
 				}
 			}
-			controls.update();
+			controls.update(clock.getDelta());
 			stats.update();
 		}
 		

@@ -2,6 +2,7 @@ function loadScene2() {
 	var loader = new THREE.OBJMTLLoader();
 	loader.addEventListener('load', function (event) {
 		objects[0] = event.content;
+		objects[0].composedObject = true;
 		objects[0].traverse(function (child) {
 			if (child instanceof THREE.Mesh) {
 				child.saveMaterial = jQuery.extend(true, {}, child.material);
@@ -14,13 +15,21 @@ function loadScene2() {
 				}
 			});
 		};
+		objects[0].setShaderMaterial = function(shader) {
+			this.traverse(function (child) {
+				if (child instanceof THREE.Mesh) {
+					shader.setUniform('isTextured', 'i', child.saveMaterial.params.diffuseMap == null ? 0 : 1);
+					shader.setUniform('diffMap', 't', child.saveMaterial.params.diffuseMap);
+					child.setMaterial(shader.createMaterial());
+				}
+			});
+		};
 		objects[0].setComposedMaterial = function(shader) {
 			var i = 0;
 			this.traverse(function (child) {
 				if (child instanceof THREE.Mesh) {
 					if (child.material != null) {
 						shader.setUniform('isTextured', 'i', 1);
-						
 						//alert("mat" + JSON.stringify(child.material.color, null, 4));
 						child.material.color = null;
 						//alert(JSON.stringify(child.saveMaterial.color, null, 4));

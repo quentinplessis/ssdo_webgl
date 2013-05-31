@@ -6,6 +6,8 @@ precision highp float;
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
 uniform sampler2D diffuseTexture;
+uniform sampler2D shadowMap;
+uniform sampler2D shadowMap1;
 
 // screen properties
 uniform float screenWidth;
@@ -16,6 +18,8 @@ uniform mat4 cameraProjectionM;
 uniform mat4 cameraViewMatrix;
 
 // lights properties
+uniform mat4 lightsView[2];
+uniform mat4 lightsProj[2];
 uniform vec3 lightsPos[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
@@ -43,24 +47,25 @@ float rand(vec2 co)
 
 void main() 
 {
+	float bias = 0.001;
 	vec4 currentPos = spacePos(gl_FragCoord.xy);
-	
+
 	if (currentPos.a == 0.0) // the current point is not in the background
 	{
 		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 		vec3 position = currentPos.xyz;
 		vec3 normal = spaceNormal(gl_FragCoord.xy);
 		normal = normalize(normal);	
-		
-		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 8;
-		const float numberOfSamplesF = 8.0;
-		const float rmax = 0.5;
-		float random = rand(vec2(1.0, 4.8));
 
+		//Number of samples we use for the SSDO algorithm
+		const int numberOfSamples = 4;
+		const float numberOfSamplesF = 4.0;
+		const float rmax = 90.0;
+		float random = rand(position.xy);
+		
 		vec3 directions[numberOfSamples];
 		vec3 samplesPosition[numberOfSamples];
-		vec4 samplesScreenSpacePosition[numberOfSamples];
+		vec4 projectionInCamSpaceSample[numberOfSamples];
 
 		//samplesVisibility[i] = true if sample i is not occulted
 		bool samplesVisibility[numberOfSamples];
@@ -70,9 +75,9 @@ void main()
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			float r1 =rand(vec2(random, random));
-			float r2 = rand(vec2(r1,r1));
-			float r3 = rand(vec2(r2,r2));
+			float r1 =rand(vec2(random, position.x));
+			float r2 = rand(vec2(r1,position.y));
+			float r3 = rand(vec2(r2,position.z));
 			vec3 sampleDirection = vec3(r1, r2, r3);
 			sampleDirection = normalize(sampleDirection);
 
@@ -81,58 +86,111 @@ void main()
 				sampleDirection = -sampleDirection;
 			}
 			directions[i] = sampleDirection;
-		
+		//	sampleDirection = normal;
+	//		sampleDirection = -normal;	
 			// random number
-			float r4 = rand(vec2(r3,r3))*rmax;
+			float r4 = rand(vec2(r3,position.z))*rmax;
 			random = r4; //The random numbers will be different in the next loop
-			samplesPosition[i] = position.xyz + r4*(sampleDirection.xyz);
+	//		r4 = 0.1;
+			samplesPosition[i] = position + r4*sampleDirection;
 
 			//Samples are back projected to the image
-			samplesScreenSpacePosition[i] = (cameraProjectionM * cameraViewMatrix * vec4(samplesPosition[i], 1.0));
-			vec2 sampleScreenSpacePositionNormalized = samplesScreenSpacePosition[i].xy/(samplesScreenSpacePosition[i].w);
-			vec2 sampleUV = sampleScreenSpacePositionNormalized*0.5 + 0.5;
-		
+			projectionInCamSpaceSample[i] = (cameraProjectionM * cameraViewMatrix * vec4(samplesPosition[i], 1.0));
+			vec2 screenSpacePositionSampleNormalized = projectionInCamSpaceSample[i].xy/(projectionInCamSpaceSample[i].w);
+			vec2 sampleUV = screenSpacePositionSampleNormalized*0.5 + 0.5;
+
 			//(projectionM*modelViewM*vec4(samplesPosition[i], 1.0)).xy;
 
 			//Determines if the sample is visible or not
-			vec4 currentSampleInCameraSpace = cameraViewMatrix*vec4(samplesPosition[i],1.0);
-			float distanceCameraSample = length((currentSampleInCameraSpace).xyz/currentSampleInCameraSpace.w);//Normalize with the 4th coordinate
-			vec4 sampleScreenPosTo3DSpace =  texture2D(positionsBuffer, sampleUV);
-			if (sampleScreenPosTo3DSpace.a == 0.0) // not in the background
+			vec4 camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
+			float distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
+
+			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
 			{
-				
-				vec4 sampleProjectionInCameraSpace = cameraViewMatrix * sampleScreenPosTo3DSpace;
-	
-				float distanceCameraSampleProjection = length((sampleProjectionInCameraSpace).xyz/sampleProjectionInCameraSpace.w);
-				if(distanceCameraSample > (distanceCameraSampleProjection+0.01)) //if the sample is inside the surface it is an occluder
+				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
+				if (sampleProjectionOnSurface.a == 0.0) // not in the background
 				{
-					samplesVisibility[i] = false; //The sample is an occluder
-				}
+
+					vec4 cameraSpaceSampleProjection = cameraViewMatrix * sampleProjectionOnSurface;
+
+			//		float distanceCameraSampleProjection = length((cameraSpaceSampleProjection).xyz/cameraSpaceSampleProjection.w);
+				//	float	distanceCameraSampleProjection = linearizeDepth(texture2D(normalsAndDepthBuffer,sampleUV).a);
+				//	distanceCameraSample = 600.0;
+					float	distanceCameraSampleProjection = texture2D(normalsAndDepthBuffer,sampleUV).a;
+					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
+					{
+						samplesVisibility[i] = false; //The sample is an occluder
+					//	gl_FragColor += vec4(0.1, 0.1, 0.1,1.0);
+					}
+					else
+					{
+						//Direct illumination is calculted with visible samples
+						samplesVisibility[i] = true; //The sample is visible
+
+						//compute the incoming radiance coming in the direction sampleDirection
+						vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
+						for(int j = 0 ; j < 2 ; j++)
+						{
+							//Visibility Test...
+							vec4 lightSpacePos4 = lightsView[j] * vec4(samplesPosition[i],1.0);
+							vec3 lightSpacePos = lightSpacePos4.xyz/lightSpacePos4.w;
+							vec3 lightSpacePosNormalized = normalize(lightSpacePos);
+							vec4 lightScreenSpacePos = lightsProj[j] * vec4(lightSpacePos, 1.0);
+							vec2 lightSSpacePosNormalized = lightScreenSpacePos.xy / lightScreenSpacePos.w;
+							vec2 lightUV = lightSSpacePosNormalized * 0.5 + 0.5;
+
+							float lightFar = 1000.0;
+							float storedDepth = lightFar;
+							vec4 data;
+							if (j == 0)
+							{
+								data = texture2D(shadowMap, lightUV);
+							}
+							else
+							{
+								data = texture2D(shadowMap1, lightUV);
+							}
+
+							if (data.r == 0.0) // not in the background
+							{
+								storedDepth = data.a;
+							
+
+								float depth = clamp(storedDepth / lightFar, 0.0, 1.0);
+								float currentDepth = clamp(length(lightSpacePos) / lightFar, 0.0, 1.0);
+
+								if (lightUV.x >= 0.0 && lightUV.x <= 1.0 && lightUV.y >= 0.0 && lightUV.y <= 1.0) 
+								{
+									if(currentDepth <= depth + bias)//The light j sees the sample
+									{
+										incomingRadiance += lightsIntensity[j]*lightsColor[j];
+									//	incomingRadiance += max(dot(sampleDirection, -lightDirection),0.0)*lightsIntensity[j]*lightsColor[j];	
+					//					gl_FragColor += vec4(0.1, 0.0, 0.1,1.0);
+									}
+									else
+									{ 
+					//					incomingRadiance = vec4(0.0, 0.0, 0.0,0.0);
+					//					gl_FragColor += vec4(0.1, 0.1, 0.1,1.0);
+									}	
+
+								}
+							}
+						}//End for on lights
+						float nombre = 1.0;
+						gl_FragColor +=1.0/nombre * 2.0*matDiffusion(gl_FragCoord.xy)*max(dot(normal, sampleDirection),0.0)*incomingRadiance/numberOfSamplesF;
+					}	
+				}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
 				else
 				{
-					//Direct illumination is calculted with visible samples
-					samplesVisibility[i] = true; //The sample is visible
-
-					//compute the incoming radiance coming in the direction sampleDirection
-					vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
-					for(int j = 0 ; j < 2 ; j++)
-					{
-						//Visibility Test...
-						vec3 lightDirection = position - lightsPos[j];
-						lightDirection = normalize(lightDirection);
-						//Radiance is positive :  in the dot product we use -lightDirection
-						incomingRadiance += lightsIntensity[j]*lightsColor[j];
-					}
-				float nombre = 1.0;
-				gl_FragColor +=1.0/nombre * 2.0*matDiffusion(gl_FragCoord.xy)*max(dot(normal, sampleDirection),0.0)*incomingRadiance/numberOfSamplesF;
-				}	
-			}
+				//	gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+				}
+			}//End SampleUV between  0.0 and 0.1
 			else
 			{
-				gl_FragColor += vec4(1.0,0.0,0.0,1.0);
+			//	gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
 			}
-		}
-	}
+		}//End for on samples
+	}//End if (currentPos.a == 0.0) // the current point is not in the background
 	else
 	{
 		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);

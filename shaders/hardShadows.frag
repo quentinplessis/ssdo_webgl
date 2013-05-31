@@ -6,6 +6,10 @@ uniform sampler2D shadowMaps[2];
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
 
+// screen properties
+uniform float screenWidth;
+uniform float screenHeight;
+
 // lights
 uniform mat4 lightsView[2];
 uniform mat4 lightsProj[2];
@@ -17,10 +21,9 @@ uniform float lightsAttenuation[2];
 uniform float skyLightIntensity;
 
 // Material properties
-uniform float matDiffuse;
 uniform float matSpecular;
 uniform float shininess;
-uniform vec4 matDiffuseColor;
+uniform sampler2D diffuseTexture;
 uniform vec4 matSpecularColor;
 
 // 3D point properties
@@ -28,6 +31,11 @@ varying vec4 worldPos;
 varying vec3 worldNormal;
 
 uniform float PI;
+
+vec4 matDiffusion(vec2 screenPos) {
+	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
+	return texture2D(diffuseTexture, uv);
+}
 
 float attenuation(vec3 dir, float div) {
 	float dist = length(dir);
@@ -54,7 +62,7 @@ vec3 phong(vec3 p, vec3 n, int i) {
 	spec = pow(spec, shininess);
 	spec = max(spec, 0.0);
 				
-	return vec3((diffuse * matDiffuse * matDiffuseColor + spec * matSpecular * matSpecularColor) * lightsColor[i] * lightsIntensity[i]);
+	return vec3((diffuse * matDiffusion(gl_FragCoord.xy) + spec * matSpecular * matSpecularColor) * lightsColor[i] * lightsIntensity[i]);
 }
 
 vec3 skyLight(vec3 normal) {

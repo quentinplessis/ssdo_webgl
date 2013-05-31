@@ -15,10 +15,13 @@ uniform float shininess;
 uniform vec4 matDiffuseColor;
 uniform vec4 matSpecularColor;
 uniform vec4 matEmissiveColor;
+uniform sampler2D diffMap;
+uniform int isTextured;
 
 // 3D point properties
 varying vec4 worldPos;
 varying vec3 worldNormal;
+varying vec2 vUv;
 
 void main() {
 	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -36,8 +39,12 @@ void main() {
 		spec = pow(spec, shininess);
 		spec = max(spec, 0.0);
 		
+		vec4 matDiff = matDiffuse * matDiffuseColor;
+		if (isTextured == 1)
+			matDiff *= texture2D(diffMap, vUv);
+		
 		gl_FragColor +=
-			(diffuse * matDiffuse * matDiffuseColor
+			(diffuse * matDiff
 			+ spec * matSpecular * matSpecularColor) * lightsColor[i] * lightsIntensity[i]
 			+ matEmissive * matEmissiveColor;
 	}

@@ -31,6 +31,12 @@ function processOFF(jqXHR, textStatus) {
 			// [0] : polygon size
 			geometry.faces.push(new THREE.Face3(indexes[1], indexes[2], indexes[3]));
 		}
+		geometry.faceVertexUvs[0].push([
+		  new THREE.Vector2(0, 0),
+		  new THREE.Vector2(0, 0),
+		  new THREE.Vector2(0, 0),
+		  new THREE.Vector2(0, 0)
+		]);
 		geometry.computeFaceNormals();
 		
 		var objectID = objects.length;
