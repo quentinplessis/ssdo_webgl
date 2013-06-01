@@ -6,6 +6,7 @@ precision highp float;
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
 uniform sampler2D diffuseTexture;
+uniform sampler2D randomTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
 
@@ -45,6 +46,14 @@ float rand(vec2 co)
 	return fract(sin(dot(co.xy,vec2(12.9898,78.233)))*43.5453);
 }
 
+float randomFloat(float x, float y, float from, float to) {
+	return texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).w * (to - from) + from;
+}
+
+vec3 randomDirection(float x, float y) {
+	return 2.0 * texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz - 1.0;
+}
+
 void main() 
 {
 	float bias = 0.001;
@@ -58,8 +67,8 @@ void main()
 		normal = normalize(normal);	
 
 		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 4;
-		const float numberOfSamplesF = 4.0;
+		const int numberOfSamples = 8;
+		const float numberOfSamplesF = 8.0;
 		const float rmax = 90.0;
 		float random = rand(position.xy);
 		
@@ -72,6 +81,7 @@ void main()
 
 		//Generate numberOfSamples random directions and random samples (uniform distribution)
 		//The samples are in the hemisphere oriented by the normal vector	
+		float ii = 0.0;
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
@@ -80,7 +90,7 @@ void main()
 			float r3 = rand(vec2(r2,position.z));
 			vec3 sampleDirection = vec3(r1, r2, r3);
 			sampleDirection = normalize(sampleDirection);
-
+			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
 			if(dot(sampleDirection, normal) < 0.0)
 			{
 				sampleDirection = -sampleDirection;
@@ -91,7 +101,8 @@ void main()
 			// random number
 			float r4 = rand(vec2(r3,position.z))*rmax;
 			random = r4; //The random numbers will be different in the next loop
-	//		r4 = 0.1;
+			r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
+			//		r4 = 0.1;
 			samplesPosition[i] = position + r4*sampleDirection;
 
 			//Samples are back projected to the image
@@ -189,6 +200,8 @@ void main()
 			{
 			//	gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
 			}
+		
+			ii += 1.0; // rand
 		}//End for on samples
 	}//End if (currentPos.a == 0.0) // the current point is not in the background
 	else

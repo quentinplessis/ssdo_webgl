@@ -23,6 +23,7 @@ var FizzyText = function() {
 
 function initControls() {
 	var text = new FizzyText();
+	fizzyText = text;
 	var gui = new dat.GUI();
 	//gui.remember(text);
 	

@@ -7,6 +7,7 @@ uniform sampler2D directLightBuffer;
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
 uniform sampler2D diffuseTexture;
+uniform sampler2D randomTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
 
@@ -49,6 +50,14 @@ vec4 directLighting(vec2 screenPos) {
 float rand(vec2 co)
 {
 	return fract(sin(dot(co.xy,vec2(12.9898,78.233)))*43.5453);
+}
+
+float randomFloat(float x, float y, float from, float to) {
+	return texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).w * (to - from) + from;
+}
+
+vec3 randomDirection(float x, float y) {
+	return 2.0 * texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz - 1.0;
 }
 
 void main() 
@@ -95,6 +104,7 @@ void main()
 
 		//Generate numberOfSamples random directions and random samples (uniform distribution)
 		//The samples are in the hemisphere oriented by the normal vector	
+		float ii = 0.0;
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
@@ -103,7 +113,7 @@ void main()
 			float r3 = rand(vec2(r2,position.z));
 			vec3 sampleDirection = vec3(r1, r2, r3);
 			sampleDirection = normalize(sampleDirection);
-
+			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
 			if(dot(sampleDirection, normal) < 0.0)
 			{
 				sampleDirection = -sampleDirection;
@@ -113,7 +123,9 @@ void main()
 			float r4 = rand(vec2(r3,position.z))*rmax;
 			random = r4;
 	//		sampleDirection = normal;
-		//	r4 = 1.0;
+			r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
+			
+			//	r4 = 1.0;
 			samplesPosition[i] = position + r4*sampleDirection;
 
 			//Samples are back projected to the image
@@ -184,6 +196,7 @@ void main()
 			{
 			//		gl_FragColor += vec4(0.05, 0.3,0.0,1.0);
 			}
+			ii += 1.0; // rand
 		}//End for on samples
 		//Adds direct light to the color
 	//	gl_FragColor += directLighting(gl_FragCoord.xy);

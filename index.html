@@ -16,6 +16,7 @@
 		<script src="lib/stats.min.js"></script>
 		<script src="lib/MTLLoaderP.js"></script>
 		<script src="lib/OBJMTLLoader.js"></script>
+		<script src="Random.js"></script>
 		<script src="OFF.js"></script>
 		<script src="Shader.js"></script>
 		<script src="PhongShader.js"></script>
@@ -83,8 +84,11 @@
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
 		customDisplays['textured'] = {names: ['diffuseMap']};
 		customDisplays['material'] = {names: ['material']};
+		customDisplays['texture'] = {names: ['texture']};
 		
-		var MODE = 'ssdo', ANIMATION = false;
+		var MODE = 'texture', ANIMATION = false;
+		
+		var randomTexture;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -98,6 +102,7 @@
 			};
 		var blankTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 		var testTexture = THREE.ImageUtils.loadTexture('textures/avatar.jpg');
+		var fizzyText; // controls
 	</script>
 	<script src="Controls.js"></script>
 	<script src="Scene1.js"></script>
@@ -163,9 +168,24 @@
 				MODE = 'textured';
 				displayManager.display(customDisplays[MODE]);
 			}
-			else if (event.keyCode == 77) { // t
-				MODE = 'material';
+			else if (event.keyCode == 77) { // m
+				MODE = 'texture';
 				displayManager.display(customDisplays[MODE]);
+			}
+			else if (event.keyCode == 37) { // left
+				if (!displayManager.previousView()) { MODE = 'all'; } render();
+			}
+			else if (event.keyCode == 39) { // right
+				if (!displayManager.nextView()) { MODE = 'all'; } render();
+			}
+			else if (event.keyCode == 67) { // c
+				//alert(fizzyText.lightControl);
+				fizzyText.lightControl = !fizzyText.lightControl;
+				//alert(fizzyText.lightControl);
+				if (fizzyText.lightControl)
+					initCameraControls(lightsCameras[fizzyText.selectedLight]);
+				else
+					initCameraControls(camera);
 			}
 			render();
 		}
