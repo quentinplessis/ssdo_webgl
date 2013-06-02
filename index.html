@@ -86,7 +86,7 @@
 		customDisplays['material'] = {names: ['material']};
 		customDisplays['texture'] = {names: ['texture']};
 		
-		var MODE = 'texture', ANIMATION = false;
+		var MODE = 'shadows', ANIMATION = false;
 		
 		var randomTexture;
 		
@@ -209,11 +209,11 @@
 					else {
 						if (materials[i]['texture'] != null) {
 							diffuseMapShader.setUniform('isTextured', 'i', 1);
-							diffuseMapShader.setUniform('texture', 't', materials[i]['texture']);
+							diffuseMapShader.setUniform('diffMap', 't', materials[i]['texture']);
 						}
 						else {
 							diffuseMapShader.setUniform('isTextured', 'i', 0);
-							diffuseMapShader.setUniform('texture', 't', null);
+							diffuseMapShader.setUniform('diffMap', 't', null);
 						}
 						objects[i].setMaterial(diffuseMapShader.createMaterial());
 					}
