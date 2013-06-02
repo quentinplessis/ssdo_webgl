@@ -47,7 +47,7 @@ function loadLights2() {
 }
 
 function initLights() {
-	loadLights2();
+	loadLights1();
 	processLights();
 }
 
@@ -106,6 +106,12 @@ function initShaders() {
 	
 	var samplesNumber = 8;
 	randomTexture = createRandTexture(window.innerWidth, window.innerHeight * samplesNumber, 4);
+	randomShader = new Shader();
+	randomShader.setUniform('screenWidth', 'f', window.innerWidth);
+	randomShader.setUniform('screenHeight', 'f', window.innerHeight);
+	randomShader.loadShader('shaders/texture.vert', 'vertex');
+	randomShader.loadShader('shaders/random.frag', 'fragment');
+	randomShader.setUniform('texture', 't', randomTexture);
 	
 	// SSDO shaders
 	directLightBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -171,8 +177,8 @@ function initScene() {
 	ssdoQuad = new THREE.Mesh(plane);
 	ssdoScene.add(ssdoQuad);
 	
-	//loadScene1();
-	loadScene2();
+	loadScene1();
+	//loadScene2();
 	
 	//phongShader.setAttribute('displacement', 'f', []);
 	// now populate the array of attributes
@@ -201,7 +207,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(directLightBuffer, 'ssdoDirect');
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
 	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');
-	displayManager.addCustomTexture(randomTexture, 'shaders/random.frag', 'texture');
+	displayManager.addDisplay(randomShader, 'random');
 	displayManager.display(customDisplays[MODE]);
 }
 

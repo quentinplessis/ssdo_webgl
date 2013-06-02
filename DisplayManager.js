@@ -70,8 +70,10 @@ var DisplayManager = Class.create({
 	previousView: function() {
 		var _id = this.currentIdInGrid - 1;
 		var stillGrid = true;
-		if (_id >= 0)
+		if (_id >= 0) {
+			this.currentIdInGrid = _id;
 			_id = this.currentIds[_id];
+		}
 		else {
 			_id = this.currentId - 1;
 			if (_id < 0)
@@ -82,6 +84,14 @@ var DisplayManager = Class.create({
 		}
 		this.display({id: _id});
 		return stillGrid;
+	},
+	showViewInGrid: function(idInGrid) {
+		if (this.currentIds.length > 0) {
+			if (idInGrid < 0) idInGrid = 0;
+			if (idInGrid >= this.currentIds.length) idInGrid = this.currentIds.length - 1;
+			this.currentIdInGrid = idInGrid;
+			this.display({id: this.currentIds[idInGrid]});
+		}
 	},
 	cleanScene: function() {
 		for (var i = 0 ; i < this.currentIds.length ; i++)

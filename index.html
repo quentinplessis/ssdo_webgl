@@ -82,9 +82,8 @@
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
-		customDisplays['textured'] = {names: ['diffuseMap']};
-		customDisplays['material'] = {names: ['material']};
-		customDisplays['texture'] = {names: ['texture']};
+		customDisplays['texture'] = {names: ['diffuseMap']};
+		customDisplays['random'] = {names: ['random']};
 		
 		var MODE = 'shadows', ANIMATION = false;
 		
@@ -140,13 +139,7 @@
 				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode >= 97 && event.keyCode <= 105) { // 1 to 9
-				/*if (MODE == 'normal')
-					displayManager.changeMode({type: 'SINGLE', id: (event.keyCode - 97)});
-				else if (MODE == 'shadows')
-					displayManager.changeMode({type: 'SINGLE', name: shadowGrid[event.keyCode - 97]});
-				else if (MODE == 'ssdo')
-					displayManager.changeMode({type: 'SINGLE', name: ssdoGrid[event.keyCode - 97]});
-				*/
+				displayManager.showViewInGrid(event.keyCode - 97);
 			}
 			else if (event.keyCode == 80) { // p
 				MODE = 'normal';
@@ -165,11 +158,11 @@
 				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 84) { // t
-				MODE = 'textured';
+				MODE = 'texture';
 				displayManager.display(customDisplays[MODE]);
 			}
-			else if (event.keyCode == 77) { // m
-				MODE = 'texture';
+			else if (event.keyCode == 82) { // r
+				MODE = 'random';
 				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 37) { // left
@@ -179,9 +172,7 @@
 				if (!displayManager.nextView()) { MODE = 'all'; } render();
 			}
 			else if (event.keyCode == 67) { // c
-				//alert(fizzyText.lightControl);
 				fizzyText.lightControl = !fizzyText.lightControl;
-				//alert(fizzyText.lightControl);
 				if (fizzyText.lightControl)
 					initCameraControls(lightsCameras[fizzyText.selectedLight]);
 				else
@@ -198,7 +189,7 @@
 				renderer.render(scene, camera, normalsAndDepthTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'texture') {
 				// 2nd rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);

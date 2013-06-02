@@ -1,5 +1,4 @@
-var FizzyText = function() {
-	this.message = 'Webgl';
+var FizzyText = function() {	
 	// views
 	this.gridDisplayed = 'overview';
 	this.viewDisplayed = 'phong';
@@ -25,17 +24,15 @@ function initControls() {
 	var text = new FizzyText();
 	fizzyText = text;
 	var gui = new dat.GUI();
-	//gui.remember(text);
-	
-	gui.add(text, 'message');
+	gui.remember(text);
 	
 	var displaysFolder = gui.addFolder('Views');
-	displaysFolder.add(text, 'gridDisplayed', {'Texture': 'textured', 'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
+	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
 		MODE = value;
 		displayManager.display(customDisplays[MODE]);
 		render();
 	});
-	displaysFolder.add(text, 'viewDisplayed', {'Texture': 'diffuseMap', 'Phong': 'phong', 'Expressive': 'expressive', 'Hard shadows': 'hardShadows'}).name('View').onChange(function(value) {
+	displaysFolder.add(text, 'viewDisplayed', {'Texture': 'diffuseMap', 'Phong': 'phong', 'Hard shadows': 'hardShadows', 'Random': 'random'}).name('View').onChange(function(value) {
 		MODE = 'all';
 		displayManager.display({names: [text.viewDisplayed]});
 		render();
