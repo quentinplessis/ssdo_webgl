@@ -103,7 +103,7 @@ function createRandTexture(cols, rows, depth) {
 	for (var i = 0 ; i < rows ; i++) {
 		for (var j = 0 ; j < cols ; j++) {
 			for (var k = 0 ; k < depth ; k++) {
-				imgd[(i*cols+j)*depth+k] = Math.random(0.0, 1.0) * 255;
+				imgd[(i*cols+j)*depth+k] = Math.random(0.0, 1.0) * 255; //Math.random(0.0, 1.0) * 255;
 			}
 		}
 	}
@@ -112,7 +112,7 @@ function createRandTexture(cols, rows, depth) {
 	var texture = new THREE.Texture();
 	texture.__webglTexture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, texture.__webglTexture);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.FLOAT, img);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);	

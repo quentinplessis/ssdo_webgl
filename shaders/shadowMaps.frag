@@ -7,5 +7,9 @@ varying vec4 camSpacePos;
 varying vec3 worldNormal;
 
 void main() {
-	gl_FragData[0] = vec4(0.0, 0.0, 0.0, length(camSpacePos.xyz));
+	float depth = length(camSpacePos.xyz);
+	float dx = dFdx(depth);
+	float dy = dFdy(depth);
+	float var = pow(depth, 2.0) + 0.25 * (dx*dx + dy*dy);
+	gl_FragData[0] = vec4(0.0, var, 0.0, depth);
 }
