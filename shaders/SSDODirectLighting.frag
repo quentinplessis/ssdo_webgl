@@ -51,8 +51,12 @@ float randomFloat(float x, float y, float from, float to) {
 }
 
 vec3 randomDirection(float x, float y) {
-	return 2.0 * texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz - 1.0;
+	vec3 data = texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz ;
+	data.xy = 2.0 * data.xy -1.0;
+//	return 2.0 * texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz - 1.0;
+	return data;
 }
+
 
 void main() 
 {
@@ -66,18 +70,19 @@ void main()
 		vec3 normal = spaceNormal(gl_FragCoord.xy);
 		normal = normalize(normal);
 
-		float random = rand(position.xy);
-		float rand1 =2.0*rand(vec2(random,position.z))-1.0; //Random number between -1.0 and 1.0
+	//	float random = rand(position.xy);
+	/*	float rand1 =2.0*rand(vec2(random,position.z))-1.0; //Random number between -1.0 and 1.0
 		float rand2 = 2.0*rand(vec2(rand1,position.x))-1.0; //Random number between -1.0 and 1.0
 		float rand3 = 2.0*rand(vec2(rand2,position.y))-1.0;
-
+*/
 	
-		vec3 vector = normalize(vec3(1.0,1.0,1.0));
+		vec3 vector = normalize(vec3(0.0,1.0,1.0));
 	//	vec3 vector = normalize(vec3(rand1,rand2,rand3));
-		vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
+	//	vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
+		vec3 tangent = normalize(cross(vector, normal));
 		vec3 bitangent = normalize(cross(normal, tangent));
 		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
-		//	mat3 normalSpaceMatrixInverse = transpose(normalSpaceMatrix); Transpose does not exist in GLSL 1.1
+		//	mat3 normalSpaceMatrix = transpose(normalSpaceMatrix); Transpose does not exist in GLSL 1.1
 		mat3 normalSpaceMatrixInverse;
 		//Transpose normalSpaceMatrix
 		normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
@@ -109,33 +114,35 @@ void main()
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			float r1 = 2.0 * rand(vec2(random, position.x))-1.0;
+		/*	float r1 = 2.0 * rand(vec2(random, position.x))-1.0;
 			float r2 = 2.0 * rand(vec2(r1,position.y))-1.0;
 			float r3 = rand(vec2(r2,position.z));
-		//	float r1 =rand(vec2(random, random));
+		//	float r1 =rand(vec2(random, random));*/
 		//	float r2 = rand(vec2(r1,r1));
 		//	float r3 = rand(vec2(r2,r2));
-			vec3 sampleDirection = vec3(r1, r2, r3);
-			sampleDirection = normalize(sampleDirection);
+		//	vec3 sampleDirection = vec3(r1, r2, r3);
+			vec3 sampleDirection = vec3(0.0,0.0,0.0);
+		//	sampleDirection = normalize(sampleDirection);
 
 			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
 
 			sampleDirection = normalize(normalSpaceMatrixInverse * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
-
-		/*	if(dot(sampleDirection, normal) < 0.0)
->>>>>>> 25514e8ad76524f7742446cd9e53856e0eb73ba8
-			{
-				sampleDirection = -sampleDirection;
-			}*/
+		//	sampleDirection = normalize(normalSpaceMatrix * vec3(0.0,0.0,1.0));
+	//		if(dot(sampleDirection, normal) < 0.0)
+	//		{
+	//			sampleDirection = -sampleDirection;
+	//		}
 			directions[i] = sampleDirection;
 		//	sampleDirection = normal;
 	//		sampleDirection = -normal;	
 			// random number
-			float r4 = rand(vec2(r3,position.z))*rmax;
+		//	float r4 = rand(vec2(r3,position.z))*rmax;
 		//	float r4 = rand(vec2(r3,r3))*rmax;
-			random = r4; //The random numbers will be different in the next loop
-			r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
+		//	random = r4; //The random numbers will be different in the next loop
+			float r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
 			//		r4 = 0.1;
+		//	r4 = 200.0;
+		//	sampleDirection= normal;
 			samplesPosition[i] = position + r4*sampleDirection;
 
 			//Samples are back projected to the image
@@ -174,7 +181,7 @@ void main()
 
 						//compute the incoming radiance coming in the direction sampleDirection
 						vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
-						for(int j = 0 ; j < 2 ; j++)
+						for(int j = 0 ; j < 1 ; j++)
 						{
 							//Visibility Test...
 							vec4 lightSpacePos4 = lightsView[j] * vec4(samplesPosition[i],1.0);
