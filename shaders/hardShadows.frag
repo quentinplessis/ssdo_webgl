@@ -32,6 +32,8 @@ varying vec3 worldNormal;
 
 uniform float PI;
 
+const float lightFar = 1000.0;
+
 vec4 matDiffusion(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
 	return texture2D(diffuseTexture, uv);
@@ -73,6 +75,28 @@ vec3 gamma(vec3 color) {
 	return pow(color, vec3(2.2));
 }
 
+float adaptDepth(float z) {
+	float n = 0.1;
+	float f = 1000.0;
+	return (z - n) / (f - n);
+}
+
+float linstep(float low, float high, float v){
+    return clamp((v-low)/(high-low), 0.0, 1.0);
+}
+
+float VSM(sampler2D depths, vec2 uv, float compare){
+    vec2 moments = texture2D(depths, uv).zw;
+	float linearizedDepth = adaptDepth(moments.y);
+	float p = smoothstep(compare-0.02, compare, linearizedDepth);
+    float variance = max(moments.x - linearizedDepth*linearizedDepth, -0.001);
+    float d = compare - linearizedDepth;
+    float p_max = linstep(0.2, 1.0, variance / (variance + d*d));
+	//return p;
+	//return step(compare, linearizedDepth + 0.001);
+	return clamp(max(p, p_max), 0.0, 1.0);
+}
+
 void main() {
 	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 	vec3 p = vec3(worldPos);
@@ -88,15 +112,22 @@ void main() {
 		
 		//vec3 lightSurfaceNormal = normalize(vec3(lightsView[i] * vec4(n, 0.0)));
 		
-		float lightFar = 1000.0;
+		
 		float storedDepth = lightFar;
 		vec4 data;
-		if (i == 0)
+		float value = 0.0;
+		if (i == 0) {
 			data = texture2D(shadowMap, lightUV);
-		else
+			if (data.r == 0.0)
+				value = VSM(shadowMap, lightUV, adaptDepth(length(lightSpacePos)));
+		}
+		else {
 			data = texture2D(shadowMap1, lightUV);
-		if (data.r == 0.0) // not in the background
-			storedDepth = data.a;
+			if (data.r == 0.0)
+				value = VSM(shadowMap1, lightUV, adaptDepth(length(lightSpacePos)));
+		}
+		//if (data.r == 0.0) // not in the background
+			//storedDepth = data.a;
 		
 		//float depth = clamp(storedDepth, 0.0, 1.0);
 		//float currentDepth = clamp(length(lightSpacePos), 0.0, 1.0);
@@ -112,7 +143,7 @@ void main() {
                 phong(p, n, i) *
 				influence(lightSpacePosNormalized, lightsAngle[i]) *
 				attenuation(lightSpacePos, lightsAttenuation[i]) *
-                illuminated *
+                value *
 				vec3(1.0, 1.0, 1.0)
             );
             gl_FragColor += vec4(gamma(excident), 1.0);
