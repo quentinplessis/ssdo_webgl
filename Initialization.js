@@ -239,11 +239,11 @@ function initCameraControls(cam) {
 // Initialization
 function init() {
 	camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
-	/*camera.position.y = 200;
-	camera.position.z = 300;*/
-	camera.position.x = -500;
+	camera.position.y = 200;
+	camera.position.z = 300;
+	/*camera.position.x = -500;
 	camera.position.y = 800;
-	camera.position.z = 0;
+	camera.position.z = 0;*/
 	
 	cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 	cameraRTT.position.z = 100;

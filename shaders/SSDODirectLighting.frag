@@ -56,7 +56,7 @@ vec3 randomDirection(float x, float y) {
 
 void main() 
 {
-	float bias = 0.001;
+	float bias = 0.01;
 	vec4 currentPos = spacePos(gl_FragCoord.xy);
 
 	if (currentPos.a == 0.0) // the current point is not in the background
@@ -64,13 +64,37 @@ void main()
 		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 		vec3 position = currentPos.xyz;
 		vec3 normal = spaceNormal(gl_FragCoord.xy);
-		normal = normalize(normal);	
+		normal = normalize(normal);
+
+		float random = rand(position.xy);
+		float rand1 =2.0*rand(vec2(random,position.z))-1.0; //Random number between -1.0 and 1.0
+		float rand2 = 2.0*rand(vec2(rand1,position.x))-1.0; //Random number between -1.0 and 1.0
+		float rand3 = 2.0*rand(vec2(rand2,position.y))-1.0;
+
+	
+		vec3 vector = normalize(vec3(1.0,1.0,1.0));
+	//	vec3 vector = normalize(vec3(rand1,rand2,rand3));
+		vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
+		vec3 bitangent = normalize(cross(normal, tangent));
+		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
+		//	mat3 normalSpaceMatrixInverse = transpose(normalSpaceMatrix); Transpose does not exist in GLSL 1.1
+		mat3 normalSpaceMatrixInverse;
+		//Transpose normalSpaceMatrix
+		normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
+		normalSpaceMatrixInverse [1][1] = normalSpaceMatrix [1][1];
+		normalSpaceMatrixInverse [2][2] = normalSpaceMatrix [2][2];
+		normalSpaceMatrixInverse [0][1] = normalSpaceMatrix [1][0];
+		normalSpaceMatrixInverse [0][2] = normalSpaceMatrix [2][0];
+		normalSpaceMatrixInverse [1][0] = normalSpaceMatrix [0][1];
+		normalSpaceMatrixInverse [1][2] = normalSpaceMatrix [2][1];
+		normalSpaceMatrixInverse [2][0] = normalSpaceMatrix [0][2];
+		normalSpaceMatrixInverse [2][1] = normalSpaceMatrix [1][2];
 
 		//Number of samples we use for the SSDO algorithm
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
-		const float rmax = 90.0;
-		float random = rand(position.xy);
+		const float rmax = 100.0;
+	//	float random = rand(vec2(3.8,7.9));
 		
 		vec3 directions[numberOfSamples];
 		vec3 samplesPosition[numberOfSamples];
@@ -85,21 +109,30 @@ void main()
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			float r1 =rand(vec2(random, position.x));
-			float r2 = rand(vec2(r1,position.y));
+			float r1 = 2.0 * rand(vec2(random, position.x))-1.0;
+			float r2 = 2.0 * rand(vec2(r1,position.y))-1.0;
 			float r3 = rand(vec2(r2,position.z));
+		//	float r1 =rand(vec2(random, random));
+		//	float r2 = rand(vec2(r1,r1));
+		//	float r3 = rand(vec2(r2,r2));
 			vec3 sampleDirection = vec3(r1, r2, r3);
 			sampleDirection = normalize(sampleDirection);
+
 			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
-			if(dot(sampleDirection, normal) < 0.0)
+
+			sampleDirection = normalize(normalSpaceMatrixInverse * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
+
+		/*	if(dot(sampleDirection, normal) < 0.0)
+>>>>>>> 25514e8ad76524f7742446cd9e53856e0eb73ba8
 			{
 				sampleDirection = -sampleDirection;
-			}
+			}*/
 			directions[i] = sampleDirection;
 		//	sampleDirection = normal;
 	//		sampleDirection = -normal;	
 			// random number
 			float r4 = rand(vec2(r3,position.z))*rmax;
+		//	float r4 = rand(vec2(r3,r3))*rmax;
 			random = r4; //The random numbers will be different in the next loop
 			r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
 			//		r4 = 0.1;
@@ -114,6 +147,7 @@ void main()
 
 			//Determines if the sample is visible or not
 			vec4 camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
+		//	float distanceCameraSample = length((camSpaceSample).xyz);//Normalize with the 4th coordinate
 			float distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
 
 			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
