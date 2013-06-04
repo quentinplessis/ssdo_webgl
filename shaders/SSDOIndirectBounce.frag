@@ -111,7 +111,7 @@ void main()
 		//Number of samples we use for the SSDO algorithm
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
-		const float rmax = 100.0;
+		const float rmax = 10.0;
 //		float random = rand(vec2(3.8,7.9));
 
 		vec3 directions[numberOfSamples];
@@ -156,7 +156,7 @@ void main()
 		//	sampleDirection = normalize(normal);
 		//	r4 = 1.0;
 		//	sampleDirection = normal;
-			samplesPosition[i] = position + r4*sampleDirection;
+			samplesPosition[i] = position  + r4*sampleDirection;
 
 			//Samples are back projected to the image
 			projectionInCamSpaceSample[i] = (cameraProjectionM * cameraViewMatrix * vec4(samplesPosition[i], 1.0));
@@ -199,18 +199,18 @@ void main()
 						vec4 directLightingVector = texture2D(directLightBuffer,sampleUV);
 						vec4 diffusion = texture2D(diffuseTexture, sampleUV);
 
-						vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrixInverse * sampleProjectionOnSurface.xyz;
+						vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix * sampleProjectionOnSurface.xyz;
 					//	if(true)
 						if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
 						{	
 						//	gl_FragColor += vec4(1.0,1.0,0.0,1.0);
-							gl_FragColor += directLightingVector;
+							gl_FragColor += directLightingVector/numberOfSamplesF;
 						//	gl_FragColor += texture2D(diffuseTexture,sampleUV);
 						//	gl_FragColor += pow(rmax, 2.0)/(numberOfSamplesF *pow(distanceSenderReceiver, 2.0) )* max(dot(transmittanceDirection, sampleNormalOnSurface), 0.0) *max(dot(transmittanceDirection, normal), 0.0) * directLightingVector;
 						//	gl_FragColor += diffusion*pow(rmax,2.0)*dot(-transmittanceDirection, normal)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//	gl_FragColor += pow(rmax,1.0)*max(dot(-transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//		gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+						//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//	gl_FragColor += diffusion*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//		gl_FragColor = vec4(1.0,0.0,1.0,1.0);
 						}
@@ -225,7 +225,8 @@ void main()
 				}//End if (sampleProjectionOnSurface.a == 0.0) not in the backgound
 				else
 				{
-				//	gl_FragColor = vec4(1.0, 0.0,0.0,1.0);
+				//	gl_FragColor += directLighting(gl_FragCoord.xy);
+				//	gl_FragColor = vec4(1.0, 0.3,0.0,1.0);
 				}
 			}//End sampleUV between 0.0 and 1.0
 			else
@@ -235,10 +236,10 @@ void main()
 			ii += 1.0; // rand
 		}//End for on samples
 		//Adds direct light to the color
-	//	gl_FragColor += directLighting(gl_FragCoord.xy);
+		// gl_FragColor += directLighting(gl_FragCoord.xy);
 		if(equals(normal, vec3(0.0,1.0,0.0), 0.01))
 		{
-			gl_FragColor += vec4(0.0,0.0,1.0,1.0);
+		//	gl_FragColor += vec4(0.0,0.0,1.0,1.0);
 		}
 	}
 	else

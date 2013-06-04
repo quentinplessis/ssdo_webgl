@@ -163,6 +163,49 @@ function initShaders() {
 	ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoFinalBuffer);
 	ssdoBlurShader.loadShader('shaders/ssdo.vert', 'vertex');
 	ssdoBlurShader.loadShader('shaders/ssdoBlur.frag', 'fragment'); 
+
+	// SSAO shaders
+	ssaoOnlyBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	ssaoOnlyShader = new Shader();
+	ssaoOnlyShader.setUniform('positionsBuffer', 't', coordsTexture);
+	ssaoOnlyShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	ssaoOnlyShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	ssaoOnlyShader.setUniform('randomTexture', 't', randomTexture);
+	ssaoOnlyShader.loadShader('shaders/ssdo.vert', 'vertex');
+	ssaoOnlyShader.loadShader('shaders/SSAOOnly.frag', 'fragment');
+	ssaoOnlyShader.setUniform('screenWidth', 'f', window.innerWidth);
+	ssaoOnlyShader.setUniform('screenHeight', 'f', window.innerHeight);
+	ssaoOnlyShader.setUniform('lightsPos', 'v3v', lightsPos);
+	ssaoOnlyShader.setUniform('lightsColor', 'v4v', lightsColor);
+	ssaoOnlyShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+	ssaoOnlyShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
+	ssaoOnlyShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
+	ssaoOnlyShader.setUniform('shadowMap', 't', shadowMaps[0]);
+	ssaoOnlyShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+	ssaoOnlyShader.setUniform('lightsView', 'm4v', lightsView);
+	ssaoOnlyShader.setUniform('lightsProj', 'm4v', lightsProj);
+
+	ssaoDiffuseBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	ssaoDiffuseShader = new Shader()
+	ssaoDiffuseShader.setUniform('positionsBuffer', 't', coordsTexture);
+	ssaoDiffuseShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	ssaoDiffuseShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	ssaoDiffuseShader.setUniform('randomTexture', 't', randomTexture);
+	ssaoDiffuseShader.loadShader('shaders/ssdo.vert', 'vertex');
+	ssaoDiffuseShader.loadShader('shaders/SSAO.frag', 'fragment');
+	ssaoDiffuseShader.setUniform('screenWidth', 'f', window.innerWidth);
+	ssaoDiffuseShader.setUniform('screenHeight', 'f', window.innerHeight);
+	ssaoDiffuseShader.setUniform('lightsPos', 'v3v', lightsPos);
+	ssaoDiffuseShader.setUniform('lightsColor', 'v4v', lightsColor);
+	ssaoDiffuseShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+	ssaoDiffuseShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
+	ssaoDiffuseShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
+	ssaoDiffuseShader.setUniform('shadowMap', 't', shadowMaps[0]);
+	ssaoDiffuseShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+	ssaoDiffuseShader.setUniform('lightsView', 'm4v', lightsView);
+	ssaoDiffuseShader.setUniform('lightsProj', 'm4v', lightsProj);
+
+
 }
 
 // Initialization of the world
@@ -170,7 +213,13 @@ function initScene() {
 	scene = new THREE.Scene();
 	sceneScreen = new THREE.Scene();
 	//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
-	
+
+	// ssao
+	ssaoScene = new THREE.Scene();
+	var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
+	ssaoQuad = new THREE.Mesh(plane);
+	ssaoScene.add(ssaoQuad);
+
 	// ssdo
 	ssdoScene = new THREE.Scene();
 	var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
@@ -204,6 +253,8 @@ function initDisplayManager() {
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
+	displayManager.addSimpleTexture(ssaoOnlyBuffer, 'ssaoOnly');
+	displayManager.addSimpleTexture(ssaoDiffuseBuffer, 'ssaoDiffuse');
 	displayManager.addSimpleTexture(directLightBuffer, 'ssdoDirect');
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
 	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');

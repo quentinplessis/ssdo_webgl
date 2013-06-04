@@ -68,11 +68,16 @@
 		var shadowMaps = [], shadowMapsResolution = 256;
 		var hardShadowsShader, hardShadowsTexture;
 		
+		var ssaoScene, ssaoQuad;
+		var ssaoOnlyShader, ssaoOnlyBuffer;
+		var ssaoDiffuseShader, ssaoDiffuseBuffer;
+
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
 		var ssdoIndirectBounceShader, ssdoFinalBuffer;
 		var ssdoBlurShader, ssdoBlurBuffer;
 		
+				
 		var customDisplays = [];
 		customDisplays['normal'] = {cols: 2	, rows: 3, 
 			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'phong']};
@@ -82,10 +87,13 @@
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
+		customDisplays['ssao'] = {cols: 2, rows: 1, 
+			names: ['ssaoOnly', 'ssaoDiffuse']};
+
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
-		var MODE = 'shadows', ANIMATION = false;
+		var MODE = 'ssao', ANIMATION = false;
 		
 		var randomTexture;
 		
@@ -182,14 +190,14 @@
 		}
 	
 		function render() {
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao') {
 				// 1st rendering : computes depth and normals
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
 				renderer.render(scene, camera, normalsAndDepthTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'texture') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture') {
 				// 2nd rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -256,14 +264,14 @@
 				}
 			}
 			
-			if (MODE == 'all' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
 				// 6th rendering : computes 3D coords
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(coordsShader.getMaterial());
 				renderer.render(scene, camera, coordsTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
@@ -292,7 +300,17 @@
 				}
 				renderer.render(scene, camera, hardShadowsTexture, true);
 			}
+			// SSAO
+			if (MODE == 'all' || MODE == 'ssao') {
+				// ssao Only
+				ssaoQuad.setMaterial(ssaoOnlyShader.createMaterial());
+				renderer.render(ssaoScene, cameraRTT, ssaoOnlyBuffer, true);
 			
+				// ssao with diffuse color
+				ssaoQuad.setMaterial(ssaoDiffuseShader.createMaterial());
+				renderer.render(ssaoScene, cameraRTT, ssaoDiffuseBuffer, true);
+			}
+
 			// SSDO
 			if (MODE == 'all' || MODE == 'ssdo') {
 				// ssdo 1st pass

@@ -44,8 +44,8 @@ function loadScene1() {
 	scene.add(objects[1]);
 
 	loadOFF('models/ground.off', 200);
-	objects[2].position.y = -200;
-	objects[2].rotation.x = - Math.PI/3;
+	objects[2].position.y = -100;
+	objects[2].rotation.x = - Math.PI/2;
 	materials[2] = jQuery.extend(true, {}, blankMaterial);
 	materials[2]['matDiffuseColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
 	materials[2]['matSpecular'] = 0.0;
