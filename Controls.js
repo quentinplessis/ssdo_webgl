@@ -18,6 +18,7 @@ var FizzyText = function() {
 	this.lightPosZ = 0.0;
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
+	this.vsm = false;
 };
 
 function initControls() {
@@ -127,6 +128,14 @@ function initControls() {
 	shadowsFolder.add(text, 'mapsResolution', 0, 512).name("Shadow maps resolution").onChange(function(value) {
 		shadowMapsResolution = Math.round(value);
 		refactorShadowMaps();
+		render();
+	});
+	shadowsFolder.add(text, 'vsm').name("VSM").onChange(function(value) {
+		if (value)
+			shadowMode = 1; // VSM
+		else
+			shadowMode = 0; // hardshadows
+		hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
 		render();
 	});
 	shadowsFolder.open();

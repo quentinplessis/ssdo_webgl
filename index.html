@@ -65,8 +65,9 @@
 		var coordsShader, coordsTexture;
 		var texturedPhong, texturedPhongTexture;
 		
-		var shadowMaps = [], shadowMapsResolution = 256;
+		var shadowMaps = [], shadowMapsResolution = 64;
 		var hardShadowsShader, hardShadowsTexture;
+		var shadowMapsDownSampled = [];
 		
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
@@ -86,6 +87,7 @@
 		customDisplays['random'] = {names: ['random']};
 		
 		var MODE = 'shadows', ANIMATION = false;
+		var shadowMode = 0; // hardShadows
 		
 		var randomTexture;
 		
@@ -106,6 +108,7 @@
 	<script src="Controls.js"></script>
 	<script src="Scene1.js"></script>
 	<script src="Scene2.js"></script>
+	<script src="Scene3.js"></script>
 	<script src="Initialization.js"></script>
 	<script>
 		init();

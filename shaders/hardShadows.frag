@@ -1,3 +1,4 @@
+#extension GL_OES_standard_derivatives : enable
 #ifdef GL_ES
 precision highp float;
 #endif
@@ -29,6 +30,8 @@ uniform vec4 matSpecularColor;
 // 3D point properties
 varying vec4 worldPos;
 varying vec3 worldNormal;
+
+uniform int shadowMode;
 
 uniform float PI;
 
@@ -86,15 +89,17 @@ float linstep(float low, float high, float v){
 }
 
 float VSM(sampler2D depths, vec2 uv, float compare){
-    vec2 moments = texture2D(depths, uv).zw;
-	float linearizedDepth = adaptDepth(moments.y);
+    vec3 moments = texture2D(depths, uv).yzw;
+	float linearizedDepth = adaptDepth(moments.z);
 	float p = smoothstep(compare-0.02, compare, linearizedDepth);
-    float variance = max(moments.x - linearizedDepth*linearizedDepth, -0.001);
-    float d = compare - linearizedDepth;
-    float p_max = linstep(0.2, 1.0, variance / (variance + d*d));
+	if (shadowMode == 1) {
+		float variance = moments.x;
+		float d = (compare - linearizedDepth) * 0.1;
+		float p_max = linstep(0.2, 1.0, variance / (variance + d*d));
+		return clamp(max(p, p_max), 0.0, 1.0);
+	}
+	return step(compare, linearizedDepth + 0.001);
 	//return p;
-	//return step(compare, linearizedDepth + 0.001);
-	return clamp(max(p, p_max), 0.0, 1.0);
 }
 
 void main() {

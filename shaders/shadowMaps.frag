@@ -17,6 +17,7 @@ void main() {
 	float d = adaptDepth(depth);
 	float dx = dFdx(d);
 	float dy = dFdy(d);
-	float var = pow(d, 2.0) + 0.25 * (dx*dx + dy*dy);
-	gl_FragData[0] = vec4(0.0, 0.0, var, depth);
+	float moment2 = pow(d, 2.0) + 0.25 * (dx*dx + dy*dy);
+	float variance = max(moment2 - d*d, -0.001);
+	gl_FragData[0] = vec4(0.0, variance, moment2, depth);
 }

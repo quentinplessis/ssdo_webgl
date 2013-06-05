@@ -1,3 +1,17 @@
+
+function loadLights1() {
+	lights[0] = new Light(
+		new THREE.Vector3(250, 200, 180),
+		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
+		1.0
+	);
+	lights[1] = new Light(
+		new THREE.Vector3(-200, 400, 150),
+		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
+		1.0
+	);
+}
+
 function loadScene1() {
 	// sphere
 	var sphereMaterial = new THREE.MeshLambertMaterial({color: 0xCC0000});

@@ -21,31 +21,6 @@ function processLights() {
 	}
 }
 
-function loadLights1() {
-	lights[0] = new Light(
-		new THREE.Vector3(250, 200, 180),
-		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
-		1.0
-	);
-	lights[1] = new Light(
-		new THREE.Vector3(-200, 400, 150),
-		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
-		1.0
-	);
-}
-function loadLights2() {
-	lights[0] = new Light(
-		new THREE.Vector3(-500, 1000, 0),
-		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
-		1.0
-	);
-	lights[1] = new Light(
-		new THREE.Vector3(110, 50, 0),
-		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
-		1.0
-	);
-}
-
 function initLights() {
 	loadLights1();
 	processLights();
@@ -102,6 +77,7 @@ function initShaders() {
 	hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
 	hardShadowsShader.setUniform('PI', 'f', Math.PI);
 	hardShadowsShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
+	hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
 	//hardShadowsShader.setUniform('worldMatrix', 'm4', camera.matrixWorldInverse);
 	
 	var samplesNumber = 8;

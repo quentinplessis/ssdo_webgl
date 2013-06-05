@@ -1,3 +1,17 @@
+
+function loadLights2() {
+	lights[0] = new Light(
+		new THREE.Vector3(-500, 1000, 0),
+		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
+		1.0
+	);
+	lights[1] = new Light(
+		new THREE.Vector3(110, 50, 0),
+		new THREE.Vector4(1.0, 1.0, 1.0, 1.0),
+		1.0
+	);
+}
+
 function loadScene2() {
 	var loader = new THREE.OBJMTLLoader();
 	loader.addEventListener('load', function (event) {
