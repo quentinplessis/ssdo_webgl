@@ -57,9 +57,20 @@ float randomFloat(float x, float y, float from, float to) {
 }
 
 vec3 randomDirection(float x, float y) {
-	return 2.0 * texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz - 1.0;
+	vec3 data = texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz ;
+	data.xy = 2.0 * data.xy -1.0;
+//	return 2.0 * texture2D(randomTexture, vec2(x / screenWidth, y / screenHeight)).xyz - 1.0;
+	return data;
 }
 
+bool equals(vec3 vector1, vec3 vector2, float epsilon)
+{
+	bool isEqualX = vector1.x < (vector2.x + epsilon) && vector1.x > (vector2.x-epsilon);
+	bool isEqualY = vector1.y < (vector2.y + epsilon) && vector1.y > (vector2.y-epsilon);
+	bool isEqualZ = vector1.z < (vector2.z + epsilon) && vector1.z > (vector2.z-epsilon);
+	return isEqualX && isEqualY && isEqualZ;
+}
+ 
 void main() 
 {
 	float bias = 0.01;
@@ -72,17 +83,19 @@ void main()
 		vec3 normal = spaceNormal(gl_FragCoord.xy);
 		normal = normalize(normal);
 	
-		float random = rand(position.xy);
-		float rand1 =2.0*rand(vec2(random,position.z))-1.0; //Random number between -1.0 and 1.0
-		float rand2 = 2.0*rand(vec2(rand1,position.x))-1.0; //Random number between -1.0 and 1.0
-		float rand3 = 2.0*rand(vec2(rand2,position.y))-1.0;
+	//	float random = rand(position.xy);
+	//	float rand1 =2.0*rand(vec2(random,position.z))-1.0; //Random number between -1.0 and 1.0
+	//	float rand2 = 2.0*rand(vec2(rand1,position.x))-1.0; //Random number between -1.0 and 1.0
+	//	float rand3 = 2.0*rand(vec2(rand2,position.y))-1.0;
 
-		vec3 vector = normalize(vec3(1.0,1.0,1.0));
+		vec3 vector = normalize(vec3(0.0,1.0,1.0));
 	//	vec3 vector = normalize(vec3(rand1,rand2,rand3));
-		vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
+		vec3 tangent = normalize(cross(vector, normal));
+	//	vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
 		vec3 bitangent = normalize(cross(normal, tangent));
+		
 		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
-		//	mat3 normalSpaceMatrixInverse = transpose(normalSpaceMatrix); Transpose does not exist in GLSL 1.1
+		//mat3 normalSpaceMatrixInverse = transpose(normalSpaceMatrix); Transpose does not exist in GLSL 1.1
 		mat3 normalSpaceMatrixInverse;
 		//Transpose normalSpaceMatrix
 		normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
@@ -98,7 +111,7 @@ void main()
 		//Number of samples we use for the SSDO algorithm
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
-		const float rmax = 100.0;
+		const float rmax = 10.0;
 //		float random = rand(vec2(3.8,7.9));
 
 		vec3 directions[numberOfSamples];
@@ -114,33 +127,36 @@ void main()
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			float r1 =2.0*rand(vec2(random,position.x))-1.0; //Random number between -1.0 and 1.0
-			float r2 = 2.0*rand(vec2(r1,position.y))-1.0; //Random number between -1.0 and 1.0
-			float r3 = rand(vec2(r2,position.z));
+	//		float r1 =2.0*rand(vec2(random,position.x))-1.0; //Random number between -1.0 and 1.0
+	//		float r2 = 2.0*rand(vec2(r1,position.y))-1.0; //Random number between -1.0 and 1.0
+	//		float r3 = rand(vec2(r2,position.z));
 		//	float r1 =rand(vec2(random,random));
 		//	float r2 = rand(vec2(r1,r1));
 		//	float r3 = rand(vec2(r2,r2));
 
-			vec3 sampleDirection = vec3(r1, r2, r3);
-			sampleDirection = normalize(sampleDirection);
+	//		vec3 sampleDirection = vec3(r1, r2, r3);
+			vec3 sampleDirection = vec3(0.0, 0.0, 0.0);
+	//		sampleDirection = normalize(sampleDirection);
 			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
-			sampleDirection = normalize(normalSpaceMatrixInverse * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
-		/*	if(dot(sampleDirection, normal) < 0.0)
->>>>>>> 25514e8ad76524f7742446cd9e53856e0eb73ba8
-			{
-				sampleDirection = -sampleDirection;
-			}*/
+			sampleDirection = normalize(normalSpaceMatrix * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
+		//	sampleDirection = normalize(normalSpaceMatrix * vec3(0.0,0.0,1.0));
+		//	sampleDirection = normal;
+		//	if(dot(sampleDirection, normal) < 0.0)
+		//	{
+		//		sampleDirection = -sampleDirection;
+		//	}
 			directions[i] = sampleDirection;
 			// random number
-			float r4 = rand(vec2(r3,position.z))*rmax;
+		//	float r4 = rand(vec2(r3,position.z))*rmax;
 		//	float r4 = rand(vec2(r3,r3))*rmax;
-			random = r4;
+		//	random = r4;
 	//		sampleDirection = normal;
-			r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
-			
+			float	r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
+		//	r4 = 200.0;
 		//	sampleDirection = normalize(normal);
 		//	r4 = 1.0;
-			samplesPosition[i] = position + r4*sampleDirection;
+		//	sampleDirection = normal;
+			samplesPosition[i] = position  + r4*sampleDirection;
 
 			//Samples are back projected to the image
 			projectionInCamSpaceSample[i] = (cameraProjectionM * cameraViewMatrix * vec4(samplesPosition[i], 1.0));
@@ -183,16 +199,18 @@ void main()
 						vec4 directLightingVector = texture2D(directLightBuffer,sampleUV);
 						vec4 diffusion = texture2D(diffuseTexture, sampleUV);
 
-						vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrixInverse * sampleProjectionOnSurface.xyz;
+						vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix * sampleProjectionOnSurface.xyz;
 					//	if(true)
 						if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
-						{
-							gl_FragColor += directLightingVector;
+						{	
+						//	gl_FragColor += vec4(1.0,1.0,0.0,1.0);
+							gl_FragColor += directLightingVector/numberOfSamplesF;
+						//	gl_FragColor += texture2D(diffuseTexture,sampleUV);
 						//	gl_FragColor += pow(rmax, 2.0)/(numberOfSamplesF *pow(distanceSenderReceiver, 2.0) )* max(dot(transmittanceDirection, sampleNormalOnSurface), 0.0) *max(dot(transmittanceDirection, normal), 0.0) * directLightingVector;
 						//	gl_FragColor += diffusion*pow(rmax,2.0)*dot(-transmittanceDirection, normal)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//	gl_FragColor += pow(rmax,1.0)*max(dot(-transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//		gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+						//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//	gl_FragColor += diffusion*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 						//		gl_FragColor = vec4(1.0,0.0,1.0,1.0);
 						}
@@ -207,7 +225,8 @@ void main()
 				}//End if (sampleProjectionOnSurface.a == 0.0) not in the backgound
 				else
 				{
-				//	gl_FragColor = vec4(1.0, 0.0,0.0,1.0);
+				//	gl_FragColor += directLighting(gl_FragCoord.xy);
+				//	gl_FragColor = vec4(1.0, 0.3,0.0,1.0);
 				}
 			}//End sampleUV between 0.0 and 1.0
 			else
@@ -217,10 +236,15 @@ void main()
 			ii += 1.0; // rand
 		}//End for on samples
 		//Adds direct light to the color
-	//	gl_FragColor += directLighting(gl_FragCoord.xy);
+		// gl_FragColor += directLighting(gl_FragCoord.xy);
+		if(equals(normal, vec3(0.0,1.0,0.0), 0.01))
+		{
+		//	gl_FragColor += vec4(0.0,0.0,1.0,1.0);
+		}
 	}
 	else
 	{
 		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);
 	}
+							
 }
