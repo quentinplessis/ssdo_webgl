@@ -97,7 +97,7 @@ void main()
 		//Number of samples we use for the SSDO algorithm
 		const int numberOfSamples = 8;
 		const float numberOfSamplesF = 8.0;
-		const float rmax = 10.0;
+		const float rmax = 100.0;
 	//	float random = rand(vec2(3.8,7.9));
 		
 		vec3 directions[numberOfSamples];

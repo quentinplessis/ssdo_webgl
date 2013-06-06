@@ -65,7 +65,7 @@ function initShaders() {
 	normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
 	normalsAndDepthShader.loadShader('shaders/computesNormalsDepth.frag', 'fragment');
 	normalsAndDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-	
+
 	// SSDO required inputs
 	coordsShader = new Shader();
 	coordsShader.loadShader('shaders/computesCoords.vert', 'vertex');
@@ -76,7 +76,18 @@ function initShaders() {
 	diffuseMapShader.loadShader('shaders/texturedWorldCoords.vert', 'vertex');
 	diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
 	diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-	
+
+	//Second depth for depth peeling
+	secondDepthShader = new Shader();
+	secondDepthShader.loadShader('shaders/default.vert', 'vertex');
+	secondDepthShader.loadShader('shaders/computeSecondDepth.frag', 'fragment');
+	secondDepthShader.setUniform('positionsBuffer', 't', coordsTexture);
+	secondDepthShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	secondDepthShader.setUniform('screenWidth', 'f', window.innerWidth);
+	secondDepthShader.setUniform('screenHeight', 'f', window.innerHeight);
+	secondDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+
+
 	// shadow mapping
 	shadowMapsShader = new Shader();
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
@@ -216,8 +227,8 @@ function initScene() {
 
 	// ssao
 	ssaoScene = new THREE.Scene();
-	var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
-	ssaoQuad = new THREE.Mesh(plane);
+	var plane1 = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
+	ssaoQuad = new THREE.Mesh(plane1);
 	ssaoScene.add(ssaoQuad);
 
 	// ssdo
@@ -227,7 +238,7 @@ function initScene() {
 	ssdoScene.add(ssdoQuad);
 	
 	loadScene1();
-	//loadScene2();
+//	loadScene2();
 	
 	//phongShader.setAttribute('displacement', 'f', []);
 	// now populate the array of attributes
@@ -259,6 +270,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
 	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');
 	displayManager.addDisplay(randomShader, 'random');
+	displayManager.addCustomTexture(secondDepthTexture, 'shaders/displaySecondDepth.frag', 'secondDepth');
 	displayManager.display(customDisplays[MODE]);
 }
 

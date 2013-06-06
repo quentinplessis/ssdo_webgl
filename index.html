@@ -64,7 +64,8 @@
 		var materialShader, materialTexture;
 		var coordsShader, coordsTexture;
 		var texturedPhong, texturedPhongTexture;
-		
+		var secondDepthShader, secondDepthTexture;		
+
 		var shadowMaps = [], shadowMapsResolution = 256;
 		var hardShadowsShader, hardShadowsTexture;
 		
@@ -87,8 +88,8 @@
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
-		customDisplays['ssao'] = {cols: 2, rows: 1, 
-			names: ['ssaoOnly', 'ssaoDiffuse']};
+		customDisplays['ssao'] = {cols: 2, rows: 2, 
+			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
 
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
@@ -194,7 +195,7 @@
 				// 1st rendering : computes depth and normals
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
-				renderer.render(scene, camera, normalsAndDepthTexture, true);
+				renderer.render(scene, camera, normalsAndDepthTexture, true);	
 			}
 			
 			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture') {
@@ -269,8 +270,22 @@
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(coordsShader.getMaterial());
 				renderer.render(scene, camera, coordsTexture, true);
+
+				//Second Depth Pass	
+				for (var i = 0 ; i < objects.length ; i++)
+					objects[i].setMaterial(secondDepthShader.getMaterial());
+				renderer.render(scene, camera, secondDepthTexture, true);
+
 			}
 			
+			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
+				//7th rendering : compute second depth	
+				for (var i = 0 ; i < objects.length ; i++)
+					objects[i].setMaterial(secondDepthShader.getMaterial());
+				renderer.render(scene, camera, secondDepthTexture, true);
+
+			}
+
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
@@ -313,6 +328,7 @@
 
 			// SSDO
 			if (MODE == 'all' || MODE == 'ssdo') {
+			
 				// ssdo 1st pass
 				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
