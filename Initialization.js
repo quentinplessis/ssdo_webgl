@@ -5,7 +5,6 @@ function processLights() {
 		lightsPos[i] = lights[i].getPosition();
 		lightsColor[i] = lights[i].getColor();
 		lightsIntensity[i] = lights[i].getIntensity();
-		
 		lightsCameras[i] = new THREE.PerspectiveCamera(70.0, 1.0, 0.1, 1000.0);
 		//lightsCameras[i] = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000 );
 		lightsCameras[i].position = lightsPos[i];
@@ -129,6 +128,7 @@ function initShaders() {
 	ssdoDirectLightingShader = new Shader();
 	ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	ssdoDirectLightingShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
 	ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	ssdoDirectLightingShader.setUniform('randomTexture', 't', randomTexture);
 	ssdoDirectLightingShader.loadShader('shaders/ssdo.vert', 'vertex');
@@ -149,6 +149,7 @@ function initShaders() {
 	ssdoIndirectBounceShader = new Shader();
 	ssdoIndirectBounceShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoIndirectBounceShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	ssdoIndirectBounceShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
 	ssdoIndirectBounceShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	ssdoIndirectBounceShader.setUniform('randomTexture', 't', randomTexture);
 	ssdoIndirectBounceShader.setUniform('directLightBuffer', 't', directLightBuffer);
@@ -184,8 +185,9 @@ function initShaders() {
 	ssaoOnlyShader.setUniform('randomTexture', 't', randomTexture);
 	ssaoOnlyShader.loadShader('shaders/ssdo.vert', 'vertex');
 	ssaoOnlyShader.loadShader('shaders/SSAOOnly.frag', 'fragment');
-	ssaoOnlyShader.setUniform('screenWidth', 'f', window.innerWidth);
-	ssaoOnlyShader.setUniform('screenHeight', 'f', window.innerHeight);
+	ssaoOnlyShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
+//	ssaoOnlyShader.setUniform('screenWidth', 'f', window.innerWidth);
+//	ssaoOnlyShader.setUniform('screenHeight', 'f', window.innerHeight);
 	ssaoOnlyShader.setUniform('lightsPos', 'v3v', lightsPos);
 	ssaoOnlyShader.setUniform('lightsColor', 'v4v', lightsColor);
 	ssaoOnlyShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);

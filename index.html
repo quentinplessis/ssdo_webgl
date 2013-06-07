@@ -90,7 +90,7 @@
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
 		customDisplays['ssao'] = {cols: 2, rows: 2, 
 			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
-
+		//	names: ['ssaoOnly']};
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
@@ -272,8 +272,12 @@
 				renderer.render(scene, camera, coordsTexture, true);
 
 				//Second Depth Pass	
+				var mat = secondDepthShader.getMaterial();
+				mat.side = THREE.DoubleSide;
 				for (var i = 0 ; i < objects.length ; i++)
-					objects[i].setMaterial(secondDepthShader.getMaterial());
+				{
+					objects[i].setMaterial(mat);
+				}
 				renderer.render(scene, camera, secondDepthTexture, true);
 
 			}

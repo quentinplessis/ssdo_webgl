@@ -19,7 +19,7 @@ vec4 spacePos(vec2 screenPos) {
 
 float spaceDepth(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);	
-	return normalize(texture2D(normalsAndDepthBuffer, uv).a);
+	return texture2D(normalsAndDepthBuffer, uv).a;
 }
 
 bool equals(float number1, float number2, float epsilon)
@@ -32,9 +32,8 @@ void main()
 {
 	float zBufferDepth = spaceDepth(gl_FragCoord.xy);
 	float currentDepth = length(camSpacePos.xyz);
-//	float currentDepth = gl_FragCoord.z;
-//	float currentDepth = gl_FragDepth;
-	if(equals(currentDepth, zBufferDepth, 0.01))
+	float bias = 1.0;
+	if(currentDepth<zBufferDepth + bias)
 	{
 		discard;
 	}
