@@ -1,0 +1,51 @@
+{
+  "preset": "Default",
+  "closed": false,
+  "remembered": {
+    "Default": {
+      "0": {
+        "gridDisplayed": "overview",
+        "viewDisplayed": "phong",
+        "skyLightIntensity": 0.1,
+        "allLights": false,
+        "selectedLight": 0,
+        "lightControl": false,
+        "lightColor": "#ffffff",
+        "lightIntensity": 1,
+        "lightAngle": 60,
+        "lightAttenuation": 0.4,
+        "lightPosX": 0,
+        "lightPosY": 0,
+        "lightPosZ": 0,
+        "mapsResolution": 64,
+        "vsm": false,
+        "dofResolution": 256,
+        "focusDistance": 300,
+        "focal": 44.563384065730695,
+        "fStop": 41.32085503985233
+      }
+    }
+  },
+  "folders": {
+    "Views": {
+      "preset": "Default",
+      "closed": false,
+      "folders": {}
+    },
+    "Lights": {
+      "preset": "Default",
+      "closed": true,
+      "folders": {}
+    },
+    "Shadows": {
+      "preset": "Default",
+      "closed": false,
+      "folders": {}
+    },
+    "Depth of Field": {
+      "preset": "Default",
+      "closed": false,
+      "folders": {}
+    }
+  }
+}

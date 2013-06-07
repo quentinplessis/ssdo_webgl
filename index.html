@@ -24,6 +24,7 @@
 		<script src="DiffuseShader.js"></script>
 		<script src="Light.js"></script>
 		<script src="DisplayManager.js"></script>
+		<script src="Scene.js"></script>
 		<link rel="stylesheet" href="css/main.css" />  
 	</head>
 	<body>
@@ -42,6 +43,7 @@
 			
 		var lightDefaultAngle = 60.0, skyLightIntensity = 0.1, 
 			lightDefaultAttenuation = 0.4, lightDefaultIntensity = 1.0;
+		var lightViewAngle = 70.0, lightRatio = 1.0, lightNear = 0.1, lightFar = 1000.0;
 		var cameraSpeed = 10.0;
 		var clock = new THREE.Clock();
 		
@@ -69,6 +71,21 @@
 		var hardShadowsShader, hardShadowsTexture;
 		var shadowMapsDownSampled = [];
 		
+		var dofScene, dofQuad;
+		var DOFBlurTexture, DOFBlurShader;
+		var DOFImageTexture, DOFImageShader;
+		var dofAuxTexture;
+		
+		var worldToMillimeter = 10;
+		var camMill = 35;
+		//var focal = 50;
+		var focal = 180 * camMill / (Math.PI * viewAngle);
+		var focusDistance = 300, blurCoeff;
+		//var ppm = 36.57;
+		var ppm = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight) / camMill;
+		//var fStop = 2.8,
+		var fStop = ppm;
+		
 		var ssaoScene, ssaoQuad;
 		var ssaoOnlyShader, ssaoOnlyBuffer;
 		var ssaoDiffuseShader, ssaoDiffuseBuffer;
@@ -78,11 +95,13 @@
 		var ssdoIndirectBounceShader, ssdoFinalBuffer;
 		var ssdoBlurShader, ssdoBlurBuffer;
 		
+		var scenes = [];
+		var currentScene = "scene1";
+		
 				
 		var customDisplays = [];
 		customDisplays['normal'] = {cols: 2	, rows: 3, 
 			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'phong']};
-		
 		customDisplays['all'] = {cols: 4, rows: 3, all: true};
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
@@ -90,11 +109,13 @@
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
 		customDisplays['ssao'] = {cols: 2, rows: 1, 
 			names: ['ssaoOnly', 'ssaoDiffuse']};
+		customDisplays['dof'] = {cols: 2, rows: 1, 
+			names: ['dofBlur', 'dofImage']};
 
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
-		var MODE = 'ssao', ANIMATION = false;
+		var MODE = 'shadows', ANIMATION = false;
 		var shadowMode = 0; // hardShadows
 		
 		var randomTexture;
@@ -114,13 +135,15 @@
 		var fizzyText; // controls
 	</script>
 	<script src="Controls.js"></script>
-	<script src="Scene1.js"></script>
-	<script src="Scene2.js"></script>
-	<script src="Scene3.js"></script>
+	<script src="scenes/Scene1.js"></script>
+	<script src="scenes/SceneSponza.js"></script>
+	<script src="scenes/Scene3.js"></script>
 	<script src="Initialization.js"></script>
 	<script>
 		init();
-		initControls();
+		$.getJSON("controls.json", function(json) {
+			initControls(json);
+		});
 		animate();
 		
 		function refactorShadowMaps() {
@@ -193,14 +216,14 @@
 		}
 	
 		function render() {
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof') {
 				// 1st rendering : computes depth and normals
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
 				renderer.render(scene, camera, normalsAndDepthTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture' || MODE == 'dof') {
 				// 2nd rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -265,6 +288,7 @@
 						objects[i].setMaterial(shaders['expressive'].createMaterial());
 					}
 				}
+				renderer.render(scene, camera, rtTextures['expressive'], true);
 			}
 			
 			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
@@ -274,7 +298,7 @@
 				renderer.render(scene, camera, coordsTexture, true);
 			}
 			
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
@@ -282,7 +306,7 @@
 				renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
 			}
 			
-			if (MODE == 'all' || MODE == 'shadows') { // || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof') { // || MODE == 'ssdo') {
 				for (var i = 0 ; i < objects.length ; i++) {
 					if (objects[i].composedObject) {
 						//hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -303,6 +327,25 @@
 				}
 				renderer.render(scene, camera, hardShadowsTexture, true);
 			}
+			
+			if (MODE == 'all' || MODE == 'dof') {
+				// blur
+				DOFBlurShader.setUniform('orientation', 'i', 0);
+				DOFBlurShader.setUniform('colorTexture', 't', hardShadowsTexture);
+				dofQuad.setMaterial(DOFBlurShader.createMaterial());
+				renderer.render(dofScene, cameraRTT, dofAuxTexture, true);
+			
+				DOFBlurShader.setUniform('orientation', 'i', 1);
+				DOFBlurShader.setUniform('colorTexture', 't', dofAuxTexture);
+				dofQuad.setMaterial(DOFBlurShader.createMaterial());
+				renderer.render(dofScene, cameraRTT, DOFBlurTexture, true);
+			
+				// composited image
+				DOFImageShader.setUniform('colorTexture', 't', hardShadowsTexture);
+				dofQuad.setMaterial(DOFImageShader.createMaterial());
+				renderer.render(dofScene, cameraRTT, DOFImageTexture, true);
+			}
+			
 			// SSAO
 			if (MODE == 'all' || MODE == 'ssao') {
 				// ssao Only

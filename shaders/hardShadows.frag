@@ -1,17 +1,17 @@
-#extension GL_OES_standard_derivatives : enable
 #ifdef GL_ES
 precision highp float;
 #endif
 
+uniform float PI;
+
 uniform sampler2D shadowMaps[2];
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
+uniform int shadowMode;
 
-// screen properties
-uniform float screenWidth;
-uniform float screenHeight;
+uniform vec2 texelSize;
 
-// lights
+// Lights
 uniform mat4 lightsView[2];
 uniform mat4 lightsProj[2];
 uniform vec3 lightsPos[2];
@@ -20,6 +20,7 @@ uniform float lightsIntensity[2];
 uniform float lightsAngle[2];
 uniform float lightsAttenuation[2];
 uniform float skyLightIntensity;
+uniform vec2 lightNearFar;
 
 // Material properties
 uniform float matSpecular;
@@ -31,14 +32,8 @@ uniform vec4 matSpecularColor;
 varying vec4 worldPos;
 varying vec3 worldNormal;
 
-uniform int shadowMode;
-
-uniform float PI;
-
-const float lightFar = 1000.0;
-
 vec4 matDiffusion(vec2 screenPos) {
-	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
+	vec2 uv = screenPos * texelSize;
 	return texture2D(diffuseTexture, uv);
 }
 
@@ -65,8 +60,7 @@ vec3 phong(vec3 p, vec3 n, int i) {
 	vec3 r = reflect(-l, n);
 	float spec = max(dot(r, v), 0.0);
 	spec = pow(spec, shininess);
-	spec = max(spec, 0.0);
-				
+	spec = max(spec, 0.0);	
 	return vec3((diffuse * matDiffusion(gl_FragCoord.xy) + spec * matSpecular * matSpecularColor) * lightsColor[i] * lightsIntensity[i]);
 }
 
@@ -79,13 +73,11 @@ vec3 gamma(vec3 color) {
 }
 
 float adaptDepth(float z) {
-	float n = 0.1;
-	float f = 1000.0;
-	return (z - n) / (f - n);
+	return (z - lightNearFar.x) / (lightNearFar.y - lightNearFar.x);
 }
 
 float linstep(float low, float high, float v){
-    return clamp((v-low)/(high-low), 0.0, 1.0);
+    return clamp((v-low) / (high-low), 0.0, 1.0);
 }
 
 float VSM(sampler2D depths, vec2 uv, float compare){
@@ -107,51 +99,35 @@ void main() {
 	vec3 p = vec3(worldPos);
 	vec3 n = normalize(worldNormal);
 	for (int i = 0 ; i < 2 ; i++) {
-		vec4 lightSpacePos4 = lightsView[i] * worldPos;
-		//vec3 lightSpacePos = lightSpacePos4.xyz / lightSpacePos4.w;
-		vec3 lightSpacePos = lightSpacePos4.xyz;
+		vec3 lightSpacePos = (lightsView[i] * worldPos).xyz;
 		vec3 lightSpacePosNormalized = normalize(lightSpacePos);
 		vec4 lightScreenSpacePos = lightsProj[i] * vec4(lightSpacePos, 1.0);
 		vec2 lightSSpacePosNormalized = lightScreenSpacePos.xy / lightScreenSpacePos.w;
 		vec2 lightUV = lightSSpacePosNormalized * 0.5 + 0.5;
 		
-		//vec3 lightSurfaceNormal = normalize(vec3(lightsView[i] * vec4(n, 0.0)));
-		
-		
-		float storedDepth = lightFar;
 		vec4 data;
-		float value = 0.0;
+		float visibility = 0.0;
 		if (i == 0) {
 			data = texture2D(shadowMap, lightUV);
 			if (data.r == 0.0)
-				value = VSM(shadowMap, lightUV, adaptDepth(length(lightSpacePos)));
+				visibility = VSM(shadowMap, lightUV, adaptDepth(length(lightSpacePos)));
 		}
 		else {
 			data = texture2D(shadowMap1, lightUV);
 			if (data.r == 0.0)
-				value = VSM(shadowMap1, lightUV, adaptDepth(length(lightSpacePos)));
+				visibility = VSM(shadowMap1, lightUV, adaptDepth(length(lightSpacePos)));
 		}
-		//if (data.r == 0.0) // not in the background
-			//storedDepth = data.a;
-		
-		//float depth = clamp(storedDepth, 0.0, 1.0);
-		//float currentDepth = clamp(length(lightSpacePos), 0.0, 1.0);
-		float depth = clamp(storedDepth / lightFar, 0.0, 1.0);
-		float currentDepth = clamp(length(lightSpacePos) / lightFar, 0.0, 1.0);
 		
 		if (lightUV.x >= 0.0 && lightUV.x <= 1.0 && lightUV.y >= 0.0 && lightUV.y <= 1.0) {
-			float bias = 0.001;
-			float illuminated = step(currentDepth, depth + bias);
-            vec3 excident = (
+			vec3 excident = (
 				skyLight(n) +
-                //lambert(lightSurfaceNormal, -lightSpacePosNormalized) *
-                phong(p, n, i) *
+				phong(p, n, i) *
 				influence(lightSpacePosNormalized, lightsAngle[i]) *
 				attenuation(lightSpacePos, lightsAttenuation[i]) *
-                value *
+				visibility *
 				vec3(1.0, 1.0, 1.0)
-            );
-            gl_FragColor += vec4(gamma(excident), 1.0);
+			);
+			gl_FragColor += vec4(gamma(excident), 1.0);
 		}
 	}
 }

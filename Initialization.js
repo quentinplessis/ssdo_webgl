@@ -6,7 +6,7 @@ function processLights() {
 		lightsColor[i] = lights[i].getColor();
 		lightsIntensity[i] = lights[i].getIntensity();
 		
-		lightsCameras[i] = new THREE.PerspectiveCamera(70.0, 1.0, 0.1, 1000.0);
+		lightsCameras[i] = new THREE.PerspectiveCamera(lightViewAngle, lightRatio, lightNear, lightFar);
 		//lightsCameras[i] = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000 );
 		lightsCameras[i].position = lightsPos[i];
 		lightsCameras[i].lookAt(lights[i].getLookAt()); 
@@ -22,7 +22,7 @@ function processLights() {
 }
 
 function initLights() {
-	loadLights1();
+	scenes[currentScene].loadLights();
 	processLights();
 }
 
@@ -35,6 +35,9 @@ function initShaders() {
 	
 	shaders['diffuse'] = new DiffuseShader(lightsPos, lightsColor, lightsIntensity);
 	rtTextures['diffuse'] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	
+	var texelSize = new THREE.Vector2(1.0 / window.innerWidth, 1.0 / window.innerHeight);
+	var lightNearFar = new THREE.Vector2(lightNear, lightFar);
 	
 	normalsAndDepthShader = new Shader();
 	normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
@@ -56,6 +59,7 @@ function initShaders() {
 	shadowMapsShader = new Shader();
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
 	shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
+	shadowMapsShader.setUniform('lightNearFar', 'v2', lightNearFar);
 	
 	// hard shadows
 	hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -63,8 +67,6 @@ function initShaders() {
 	hardShadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
 	hardShadowsShader.loadShader('shaders/hardShadows.frag', 'fragment');
 	hardShadowsShader.setUniform('diffuseTexture', 't', diffuseTexture);
-	hardShadowsShader.setUniform('screenWidth', 'f', window.innerWidth);
-	hardShadowsShader.setUniform('screenHeight', 'f', window.innerHeight);
 	hardShadowsShader.setUniform('shadowMaps', 'vt', shadowMaps);
 	hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 	hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
@@ -74,11 +76,40 @@ function initShaders() {
 	hardShadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
 	hardShadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
 	hardShadowsShader.setUniform('lightsAngle', 'fv1', lightsAngle);
-	hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
-	hardShadowsShader.setUniform('PI', 'f', Math.PI);
 	hardShadowsShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
+	hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
+	hardShadowsShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	hardShadowsShader.setUniform('PI', 'f', Math.PI);
 	hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
-	//hardShadowsShader.setUniform('worldMatrix', 'm4', camera.matrixWorldInverse);
+	hardShadowsShader.setUniform('texelSize', 'v2', texelSize);
+	
+	// depth-of-field
+	blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
+	DOFBlurTexture = new THREE.WebGLRenderTarget(256, 256, options);
+	DOFBlurShader = new Shader();
+	DOFBlurShader.loadShader('shaders/texture.vert', 'vertex');
+	DOFBlurShader.loadShader('shaders/DOFBlur.frag', 'fragment');
+	//DOFBlurShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	DOFBlurShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	DOFBlurShader.setUniform('texelSize', 'v2', texelSize);
+	DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
+	DOFBlurShader.setUniform('focusDistance', 'f', focusDistance);
+	DOFBlurShader.setUniform('near', 'f', near);
+	DOFBlurShader.setUniform('far', 'f', far);
+	DOFBlurShader.setUniform('PPM', 'f', ppm);
+	
+	DOFImageTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	DOFImageShader = new Shader();
+	DOFImageShader.loadShader('shaders/texture.vert', 'vertex');
+	DOFImageShader.loadShader('shaders/DOFImage.frag', 'fragment');
+	//DOFImageShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	DOFImageShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	DOFImageShader.setUniform('dofBlur', 't', DOFBlurTexture);
+	DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
+	DOFImageShader.setUniform('focusDistance', 'f', focusDistance);
+	DOFImageShader.setUniform('near', 'f', near);
+	DOFImageShader.setUniform('far', 'f', far);
+	DOFImageShader.setUniform('PPM', 'f', ppm);
 	
 	var samplesNumber = 8;
 	randomTexture = createRandTexture(window.innerWidth, window.innerHeight * samplesNumber, 4);
@@ -180,8 +211,6 @@ function initShaders() {
 	ssaoDiffuseShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 	ssaoDiffuseShader.setUniform('lightsView', 'm4v', lightsView);
 	ssaoDiffuseShader.setUniform('lightsProj', 'm4v', lightsProj);
-
-
 }
 
 // Initialization of the world
@@ -190,19 +219,24 @@ function initScene() {
 	sceneScreen = new THREE.Scene();
 	//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
+	var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
+	// dof
+	dofScene = new THREE.Scene();
+	dofQuad = new THREE.Mesh(plane);
+	dofScene.add(dofQuad);
+	
 	// ssao
 	ssaoScene = new THREE.Scene();
-	var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
 	ssaoQuad = new THREE.Mesh(plane);
 	ssaoScene.add(ssaoQuad);
 
 	// ssdo
 	ssdoScene = new THREE.Scene();
-	var plane = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
 	ssdoQuad = new THREE.Mesh(plane);
 	ssdoScene.add(ssdoQuad);
 	
-	loadScene1();
+	scenes[currentScene].loadWorld();
+	//loadScene1();
 	//loadScene2();
 	
 	//phongShader.setAttribute('displacement', 'f', []);
@@ -229,6 +263,8 @@ function initDisplayManager() {
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
+	displayManager.addSimpleTexture(DOFBlurTexture, 'dofBlur');
+	displayManager.addSimpleTexture(DOFImageTexture, 'dofImage');
 	displayManager.addSimpleTexture(ssaoOnlyBuffer, 'ssaoOnly');
 	displayManager.addSimpleTexture(ssaoDiffuseBuffer, 'ssaoDiffuse');
 	displayManager.addSimpleTexture(directLightBuffer, 'ssdoDirect');

@@ -8,8 +8,8 @@ varying vec2 vUv;
 
 void main() {
 	worldPos = modelMatrix * vec4(position, 1.0);
-	worldNormal = normalize(vec3(modelMatrix * vec4(normal, 0.0)));
+	worldNormal = normalize(mat3(modelMatrix) * normal);
 	vUv = uv;
 
-	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+	gl_Position = projectionMatrix * viewMatrix * worldPos;
 }

@@ -1,5 +1,6 @@
 var FizzyText = function() {	
 	// views
+	this.scene = currentScene;
 	this.gridDisplayed = 'overview';
 	this.viewDisplayed = 'phong';
 	this.nextView = function() { if (!displayManager.nextView()) { MODE = 'all'; } render(); };
@@ -19,15 +20,36 @@ var FizzyText = function() {
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
 	this.vsm = false;
+	// dof
+	this.dofResolution = 256;
+	this.focusDistance = focusDistance;
+	this.focal = focal;
+	this.fStop = fStop;
 };
 
-function initControls() {
+function initControls(json) {
 	var text = new FizzyText();
 	fizzyText = text;
-	var gui = new dat.GUI();
+	var gui = new dat.GUI();/*({
+		load: json//,
+		//preset: 'Flow'
+	});*/
 	gui.remember(text);
 	
 	var displaysFolder = gui.addFolder('Views');
+	displaysFolder.add(text, 'scene', {'Scene1': 'scene1', 'Sponza': 'sponza', 'Scene3': 'scene3'}).name('Scene').onChange(function(value) {
+		scene = new THREE.Scene();
+		objects = [];
+		materials = []; lights = []; lightsPos = []; lightsColor = [];
+		lightsIntensity = []; lightsCameras = []; lightsView = []; lightsProj = [];
+		lightsAngle = []; lightsAttenuation = []; shadowMaps = [];
+		currentScene = value;
+		initLights();
+		initShaders();
+		scenes[currentScene].loadWorld();
+		initDisplayManager();
+		render();
+	});
 	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
 		MODE = value;
 		displayManager.display(customDisplays[MODE]);
@@ -122,7 +144,7 @@ function initControls() {
 			lightsPos[text.selectedLight].z = value;
 		render();
 	});
-	lightsFolder.open();
+	//lightsFolder.open();
 	
 	var shadowsFolder = gui.addFolder("Shadows");
 	shadowsFolder.add(text, 'mapsResolution', 0, 512).name("Shadow maps resolution").onChange(function(value) {
@@ -139,4 +161,34 @@ function initControls() {
 		render();
 	});
 	shadowsFolder.open();
+	
+	var dofFolder = gui.addFolder("Depth of Field");
+	dofFolder.add(text, 'dofResolution', 0, 512).name("Blur resolution").onChange(function(value) {
+		
+		render();
+	});
+	dofFolder.add(text, 'focusDistance', 0, 1000).name("Focus distance").onChange(function(value) {
+		focusDistance = value;
+		blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
+		DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
+		DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
+		DOFBlurShader.setUniform('focusDistance', 'f', focusDistance);
+		DOFImageShader.setUniform('focusDistance', 'f', focusDistance);
+		render();
+	});
+	dofFolder.add(text, 'focal', 0, 100).name("Focal").onChange(function(value) {
+		focal = value;
+		blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
+		DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
+		DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
+		render();
+	});
+	dofFolder.add(text, 'fStop', 0, 100).name("F-Stop").onChange(function(value) {
+		fStop = value;
+		blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
+		DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
+		DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
+		render();
+	});
+	dofFolder.open();
 }

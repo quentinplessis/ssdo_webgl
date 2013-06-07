@@ -1,17 +1,18 @@
 #extension GL_OES_standard_derivatives : enable
+#extension GL_OES_texture_float : enable
 
 #ifdef GL_ES
 precision highp float;
 #endif
+
+uniform vec2 lightNearFar;
 
 // 3D point properties
 varying vec4 camSpacePos;
 varying vec3 worldNormal;
 
 float adaptDepth(float z) {
-	float n = 0.1;
-	float f = 1000.0;
-	return (z - n) / (f - n);
+	return (z - lightNearFar.x) / (lightNearFar.y - lightNearFar.x);
 }
 
 void main() {
