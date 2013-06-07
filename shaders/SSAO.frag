@@ -61,7 +61,7 @@ void main()
 {
 	float bias = 0.01;
 	vec4 currentPos = spacePos(gl_FragCoord.xy);
-		float visibilityFactor = 0.0;
+	float visibilityFactor = 0.0;
 		
 	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 
@@ -107,7 +107,7 @@ void main()
 			// random numbers
 			vec3 sampleDirection = vec3(0.0,0.0,0.0);
 
-			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
+			sampleDirection = randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF);
 
 			sampleDirection = normalize(normalSpaceMatrix * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
 			directions[i] = sampleDirection;
@@ -174,5 +174,4 @@ void main()
 	{
 		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);
 	}
-		
 }

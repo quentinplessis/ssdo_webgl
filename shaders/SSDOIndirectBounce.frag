@@ -6,6 +6,7 @@ precision highp float;
 uniform sampler2D directLightBuffer;
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
+uniform sampler2D secondDepthBuffer;
 uniform sampler2D diffuseTexture;
 uniform sampler2D randomTexture;
 uniform sampler2D shadowMap;
@@ -195,25 +196,32 @@ void main()
 
 					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
 					{
-						samplesVisibility[i] = false; //The sample is an occluder
-						vec4 directLightingVector = texture2D(directLightBuffer,sampleUV);
-						vec4 diffusion = texture2D(diffuseTexture, sampleUV);
+						//The sample is an eventual occluder
+						//Verification with depth peeling
+						float secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
+						if(distanceCameraSample < secondDepth) //The sample is inside an object
+						{
+							samplesVisibility[i] = false; //The sample is an occluder
+							vec4 directLightingVector = texture2D(directLightBuffer,sampleUV);
+							vec4 diffusion = texture2D(diffuseTexture, sampleUV);
 
-						vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix * sampleProjectionOnSurface.xyz;
+							vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix * sampleProjectionOnSurface.xyz;
 					//	if(true)
-						if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
-						{	
-						//	gl_FragColor += vec4(1.0,1.0,0.0,1.0);
-							gl_FragColor += directLightingVector/numberOfSamplesF;
-						//	gl_FragColor += texture2D(diffuseTexture,sampleUV);
-						//	gl_FragColor += pow(rmax, 2.0)/(numberOfSamplesF *pow(distanceSenderReceiver, 2.0) )* max(dot(transmittanceDirection, sampleNormalOnSurface), 0.0) *max(dot(transmittanceDirection, normal), 0.0) * directLightingVector;
-						//	gl_FragColor += diffusion*pow(rmax,2.0)*dot(-transmittanceDirection, normal)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//	gl_FragColor += pow(rmax,1.0)*max(dot(-transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//	gl_FragColor += diffusion*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-						//		gl_FragColor = vec4(1.0,0.0,1.0,1.0);
-						}
+							if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
+							{	
+							//	gl_FragColor += vec4(1.0,1.0,0.0,1.0);
+								gl_FragColor += matDiffusion(gl_FragCoord.xy) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
+						//	gl_FragColor += directLightingVector;
+							//	gl_FragColor += texture2D(diffuseTexture,sampleUV);
+							//	gl_FragColor += pow(rmax, 2.0)/(numberOfSamplesF *pow(distanceSenderReceiver, 2.0) )* max(dot(transmittanceDirection, sampleNormalOnSurface), 0.0) *max(dot(transmittanceDirection, normal), 0.0) * directLightingVector;
+							//	gl_FragColor += diffusion*pow(rmax,2.0)*dot(-transmittanceDirection, normal)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+							//	gl_FragColor += pow(rmax,1.0)*max(dot(-transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+							//	gl_FragColor += diffusion*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+							//		gl_FragColor = vec4(1.0,0.0,1.0,1.0);
+							}
+						}//End if verification second depth for depth peeling
 					}
 					else
 					{
@@ -236,7 +244,7 @@ void main()
 			ii += 1.0; // rand
 		}//End for on samples
 		//Adds direct light to the color
-		// gl_FragColor += directLighting(gl_FragCoord.xy);
+		 gl_FragColor += directLighting(gl_FragCoord.xy);
 		if(equals(normal, vec3(0.0,1.0,0.0), 0.01))
 		{
 		//	gl_FragColor += vec4(0.0,0.0,1.0,1.0);

@@ -5,7 +5,7 @@ function processLights() {
 		lightsPos[i] = lights[i].getPosition();
 		lightsColor[i] = lights[i].getColor();
 		lightsIntensity[i] = lights[i].getIntensity();
-		
+
 		lightsCameras[i] = new THREE.PerspectiveCamera(lightViewAngle, lightRatio, lightNear, lightFar);
 		//lightsCameras[i] = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000 );
 		lightsCameras[i].position = lightsPos[i];
@@ -43,7 +43,7 @@ function initShaders() {
 	normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
 	normalsAndDepthShader.loadShader('shaders/computesNormalsDepth.frag', 'fragment');
 	normalsAndDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-	
+
 	// SSDO required inputs
 	coordsShader = new Shader();
 	coordsShader.loadShader('shaders/computesCoords.vert', 'vertex');
@@ -54,7 +54,18 @@ function initShaders() {
 	diffuseMapShader.loadShader('shaders/texturedWorldCoords.vert', 'vertex');
 	diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
 	diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-	
+
+	//Second depth for depth peeling
+	secondDepthShader = new Shader();
+	secondDepthShader.loadShader('shaders/default.vert', 'vertex');
+	secondDepthShader.loadShader('shaders/computeSecondDepth.frag', 'fragment');
+	secondDepthShader.setUniform('positionsBuffer', 't', coordsTexture);
+	secondDepthShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	secondDepthShader.setUniform('screenWidth', 'f', window.innerWidth);
+	secondDepthShader.setUniform('screenHeight', 'f', window.innerHeight);
+	secondDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+
+
 	// shadow mapping
 	shadowMapsShader = new Shader();
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
@@ -125,6 +136,7 @@ function initShaders() {
 	ssdoDirectLightingShader = new Shader();
 	ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	ssdoDirectLightingShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
 	ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	ssdoDirectLightingShader.setUniform('randomTexture', 't', randomTexture);
 	ssdoDirectLightingShader.loadShader('shaders/ssdo.vert', 'vertex');
@@ -145,6 +157,7 @@ function initShaders() {
 	ssdoIndirectBounceShader = new Shader();
 	ssdoIndirectBounceShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoIndirectBounceShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+	ssdoIndirectBounceShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
 	ssdoIndirectBounceShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	ssdoIndirectBounceShader.setUniform('randomTexture', 't', randomTexture);
 	ssdoIndirectBounceShader.setUniform('directLightBuffer', 't', directLightBuffer);
@@ -180,8 +193,9 @@ function initShaders() {
 	ssaoOnlyShader.setUniform('randomTexture', 't', randomTexture);
 	ssaoOnlyShader.loadShader('shaders/ssdo.vert', 'vertex');
 	ssaoOnlyShader.loadShader('shaders/SSAOOnly.frag', 'fragment');
-	ssaoOnlyShader.setUniform('screenWidth', 'f', window.innerWidth);
-	ssaoOnlyShader.setUniform('screenHeight', 'f', window.innerHeight);
+	ssaoOnlyShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
+//	ssaoOnlyShader.setUniform('screenWidth', 'f', window.innerWidth);
+//	ssaoOnlyShader.setUniform('screenHeight', 'f', window.innerHeight);
 	ssaoOnlyShader.setUniform('lightsPos', 'v3v', lightsPos);
 	ssaoOnlyShader.setUniform('lightsColor', 'v4v', lightsColor);
 	ssaoOnlyShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
@@ -234,10 +248,8 @@ function initScene() {
 	ssdoScene = new THREE.Scene();
 	ssdoQuad = new THREE.Mesh(plane);
 	ssdoScene.add(ssdoQuad);
-	
+
 	scenes[currentScene].loadWorld();
-	//loadScene1();
-	//loadScene2();
 	
 	//phongShader.setAttribute('displacement', 'f', []);
 	// now populate the array of attributes
@@ -271,6 +283,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
 	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');
 	displayManager.addDisplay(randomShader, 'random');
+	displayManager.addCustomTexture(secondDepthTexture, 'shaders/displaySecondDepth.frag', 'secondDepth');
 	displayManager.display(customDisplays[MODE]);
 }
 
