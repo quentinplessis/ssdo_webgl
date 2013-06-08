@@ -139,10 +139,9 @@ function initShaders() {
 	ssdoDirectLightingShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
 	ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	ssdoDirectLightingShader.setUniform('randomTexture', 't', randomTexture);
-	ssdoDirectLightingShader.loadShader('shaders/ssdo.vert', 'vertex');
+	ssdoDirectLightingShader.loadShader('shaders/texture.vert', 'vertex');
 	ssdoDirectLightingShader.loadShader('shaders/SSDODirectLighting.frag', 'fragment');
-	ssdoDirectLightingShader.setUniform('screenWidth', 'f', window.innerWidth);
-	ssdoDirectLightingShader.setUniform('screenHeight', 'f', window.innerHeight);
+	ssdoDirectLightingShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
 	ssdoDirectLightingShader.setUniform('lightsPos', 'v3v', lightsPos);
 	ssdoDirectLightingShader.setUniform('lightsColor', 'v4v', lightsColor);
 	ssdoDirectLightingShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
@@ -189,13 +188,11 @@ function initShaders() {
 	ssaoOnlyShader = new Shader();
 	ssaoOnlyShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssaoOnlyShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
-	ssaoOnlyShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	ssaoOnlyShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
 	ssaoOnlyShader.setUniform('randomTexture', 't', randomTexture);
-	ssaoOnlyShader.loadShader('shaders/ssdo.vert', 'vertex');
+	ssaoOnlyShader.loadShader('shaders/texture.vert', 'vertex');
 	ssaoOnlyShader.loadShader('shaders/SSAOOnly.frag', 'fragment');
 	ssaoOnlyShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
-//	ssaoOnlyShader.setUniform('screenWidth', 'f', window.innerWidth);
-//	ssaoOnlyShader.setUniform('screenHeight', 'f', window.innerHeight);
 	ssaoOnlyShader.setUniform('lightsPos', 'v3v', lightsPos);
 	ssaoOnlyShader.setUniform('lightsColor', 'v4v', lightsColor);
 	ssaoOnlyShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
