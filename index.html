@@ -76,17 +76,19 @@
 		var dofScene, dofQuad;
 		var DOFBlurTexture, DOFBlurShader;
 		var DOFImageTexture, DOFImageShader;
-		var dofAuxTexture;
+		var dofAuxTexture, dofResolution = 256;
 		
 		var worldToMillimeter = 10;
 		var camMill = 35;
 		//var focal = 50;
 		var focal = 180 * camMill / (Math.PI * viewAngle);
-		var focusDistance = 300, blurCoeff;
+		focal = 80;
+		var focusDistance = 380, blurCoeff;
 		//var ppm = 36.57;
 		var ppm = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight) / camMill;
 		//var fStop = 2.8,
 		var fStop = ppm;
+		fStop = 20;
 		
 		var ssaoScene, ssaoQuad;
 		var ssaoOnlyShader, ssaoOnlyBuffer;
@@ -114,8 +116,8 @@
 			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
 		//	names: ['ssaoOnly']};
 		
-		customDisplays['dof'] = {cols: 2, rows: 1, 
-			names: ['dofBlur', 'dofImage']};
+		customDisplays['dof'] = {cols: 2, rows: 2, 
+			names: ['dofBlurAux', 'dofBlur', 'dofImage', 'hardShadows']};
 			
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
@@ -156,9 +158,9 @@
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
-			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			ssdoDirectLightingShader.setUniform('shadowMap1', 't', shadowMaps[1]);
-			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			ssdoIndirectBounceShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
@@ -202,6 +204,10 @@
 			}
 			else if (event.keyCode == 82) { // r
 				MODE = 'random';
+				displayManager.display(customDisplays[MODE]);
+			}
+			else if (event.keyCode == 70) { // f
+				MODE = 'dof';
 				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 37) { // left

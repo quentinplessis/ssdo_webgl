@@ -65,7 +65,6 @@ function initShaders() {
 	secondDepthShader.setUniform('screenHeight', 'f', window.innerHeight);
 	secondDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 
-
 	// shadow mapping
 	shadowMapsShader = new Shader();
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
@@ -96,11 +95,11 @@ function initShaders() {
 	
 	// depth-of-field
 	blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
-	DOFBlurTexture = new THREE.WebGLRenderTarget(256, 256, options);
+	DOFBlurTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
+	dofAuxTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
 	DOFBlurShader = new Shader();
 	DOFBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	DOFBlurShader.loadShader('shaders/DOFBlur.frag', 'fragment');
-	//DOFBlurShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	DOFBlurShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	DOFBlurShader.setUniform('texelSize', 'v2', texelSize);
 	DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
@@ -113,7 +112,6 @@ function initShaders() {
 	DOFImageShader = new Shader();
 	DOFImageShader.loadShader('shaders/texture.vert', 'vertex');
 	DOFImageShader.loadShader('shaders/DOFImage.frag', 'fragment');
-	//DOFImageShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	DOFImageShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	DOFImageShader.setUniform('dofBlur', 't', DOFBlurTexture);
 	DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
@@ -272,6 +270,7 @@ function initDisplayManager() {
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
+	displayManager.addSimpleTexture(dofAuxTexture, 'dofBlurAux');
 	displayManager.addSimpleTexture(DOFBlurTexture, 'dofBlur');
 	displayManager.addSimpleTexture(DOFImageTexture, 'dofImage');
 	displayManager.addSimpleTexture(ssaoOnlyBuffer, 'ssaoOnly');

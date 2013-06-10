@@ -6,29 +6,20 @@ uniform sampler2D colorTexture;
 uniform sampler2D normalsAndDepthBuffer;
 varying vec2 vUv;
 
-uniform vec2 texelSize;     // Size of one texel (1 / width, 1 / height)
+uniform vec2 texelSize;
 uniform int orientation;    // 0 = horizontal, 1 = vertical
-uniform float blurCoefficient;  // Calculated from the blur equation, b = ( f * ms / N )
-uniform float focusDistance;    // The distance to the subject in perfect focus (= Ds)
-uniform float near;     // Near clipping plane
-uniform float far;      // Far clipping plane
-uniform float PPM;      // Pixels per millimetre
+uniform float blurCoefficient;
+uniform float focusDistance; 
+uniform float near;
+uniform float far;
+uniform float PPM; // Pixels per millimetre
 
-/// <summary>
-/// Calculate the blur diameter to apply on the image.
-/// b = (f * ms / N) * (xd / (Ds +- xd))
-/// Where:
-/// (Ds + xd) for background objects
-/// (Ds - xd) for foreground objects
-/// </summary>
-/// <param name="d">Depth of the fragment.</param>
 float GetBlurDiameter (float d) {
 	// Convert from linear depth to metres
-	float Dd = d;// * (far - near);
-
+	float Dd = d;
 	float xd = abs(Dd - focusDistance);
 	float xdd = (Dd < focusDistance) ? (focusDistance - xd) : (focusDistance + xd);
-	float b = 1.0 * (xd / xdd);
+	float b = blurCoefficient * (xd / xdd);
 
 	return b * PPM;
 }
