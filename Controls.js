@@ -50,7 +50,7 @@ function initControls(json) {
 		initDisplayManager();
 		render();
 	});
-	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
+	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo', 'Depth of Field': 'dof'}).name('Grid').onChange(function(value) {
 		MODE = value;
 		displayManager.display(customDisplays[MODE]);
 		render();
