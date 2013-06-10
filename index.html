@@ -68,7 +68,9 @@
 		var texturedPhong, texturedPhongTexture;
 
 		var secondDepthShader, secondDepthTexture;		
-		var shadowMaps = [], shadowMapsResolution = 64;
+		var shadowMaps = [], shadowMapsResolution = 256;
+		var shadowMapAux, shadowMapAux2, shadowMapBlurShader, blurShadowMaps = false;
+		var smScene, shadowMapsBlurSize = 4.0;
 
 		var hardShadowsShader, hardShadowsTexture;
 		var shadowMapsDownSampled = [];
@@ -122,7 +124,7 @@
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
-		var MODE = 'ssao', ANIMATION = false;
+		var MODE = 'shadows', ANIMATION = false;
 		var shadowMode = 0; // hardShadows
 		
 		var randomTexture;
@@ -156,6 +158,8 @@
 		function refactorShadowMaps() {
 			for (var i = 0 ; i < lights.length ; i++)
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+			shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+			shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[0]);
@@ -331,8 +335,23 @@
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
-				renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
-				renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
+				if (shadowMode == 1 && blurShadowMaps) {
+					for (var i = 0 ; i < lights.length ; i++) {
+						renderer.render(scene, lightsCameras[i], shadowMapAux, true);
+						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux);
+						shadowMapBlurShader.setUniform('orientation', 'i', 0);
+						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
+						renderer.render(smScene, cameraRTT, shadowMapAux2, true);
+						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux2);
+						shadowMapBlurShader.setUniform('orientation', 'i', 1);
+						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
+						renderer.render(smScene, cameraRTT, shadowMaps[i], true);
+					}
+				}
+				else {
+					renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
+					renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
+				}
 			}
 			
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof') { // || MODE == 'ssdo') {

@@ -18,6 +18,8 @@ function processLights() {
 		lightsAttenuation[i] = lightDefaultAttenuation;
 	
 		shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+		shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+		shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 	}
 }
 
@@ -70,6 +72,12 @@ function initShaders() {
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
 	shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
 	shadowMapsShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	
+	shadowMapBlurShader = new Shader();
+	shadowMapBlurShader.loadShader('shaders/texture.vert', 'vertex');
+	shadowMapBlurShader.loadShader('shaders/shadowMapBlur.frag', 'fragment');
+	shadowMapBlurShader.setUniform('texelSize', 'v2', texelSize);
+	shadowMapBlurShader.setUniform('blurSize', 'f', 50.0);
 	
 	// hard shadows
 	hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -233,6 +241,11 @@ function initScene() {
 	dofScene = new THREE.Scene();
 	dofQuad = new THREE.Mesh(plane);
 	dofScene.add(dofQuad);
+	
+	// shadow maps blur
+	smScene = new THREE.Scene();
+	smQuad = new THREE.Mesh(plane);
+	smScene.add(smQuad);
 	
 	// ssao
 	ssaoScene = new THREE.Scene();

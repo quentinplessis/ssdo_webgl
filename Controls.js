@@ -20,6 +20,8 @@ var FizzyText = function() {
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
 	this.vsm = false;
+	this.shadowBlur = blurShadowMaps;
+	this.shadowMapsBlurSize = shadowMapsBlurSize;
 	// dof
 	this.dofResolution = dofResolution;
 	this.focusDistance = focusDistance;
@@ -158,6 +160,15 @@ function initControls(json) {
 		else
 			shadowMode = 0; // hardshadows
 		hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
+		render();
+	});
+	shadowsFolder.add(text, 'shadowBlur').name("Blur").onChange(function(value) {
+		blurShadowMaps = value;
+		render();
+	});
+	shadowsFolder.add(text, 'shadowMapsBlurSize', 0.0, 30.0).name("Blur size").onChange(function(value) {
+		shadowMapsBlurSize = value;
+		shadowMapBlurShader.setUniform('blurSize', 'f', shadowMapsBlurSize);
 		render();
 	});
 	shadowsFolder.open();
