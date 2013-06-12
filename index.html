@@ -68,7 +68,7 @@
 		var texturedPhong, texturedPhongTexture;
 
 		var secondDepthShader, secondDepthTexture;		
-		var shadowMaps = [], shadowMapsResolution = 256;
+		var shadowMaps = [], shadowMapsResolution = 64, shadowMapsFullResolution = 256;
 		var shadowMapAux, shadowMapAux2, shadowMapBlurShader, blurShadowMaps = false;
 		var smScene, shadowMapsBlurSize = 4.0;
 
@@ -158,8 +158,8 @@
 		function refactorShadowMaps() {
 			for (var i = 0 ; i < lights.length ; i++)
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
-			shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
-			shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+			shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
+			shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[0]);

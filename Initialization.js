@@ -18,9 +18,9 @@ function processLights() {
 		lightsAttenuation[i] = lightDefaultAttenuation;
 	
 		shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
-		shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
-		shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 	}
+	shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
+	shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
 }
 
 function initLights() {
@@ -77,7 +77,8 @@ function initShaders() {
 	shadowMapBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	shadowMapBlurShader.loadShader('shaders/shadowMapBlur.frag', 'fragment');
 	shadowMapBlurShader.setUniform('texelSize', 'v2', texelSize);
-	shadowMapBlurShader.setUniform('blurSize', 'f', 50.0);
+	var test = 4.0;
+	shadowMapBlurShader.setUniform('blurSize', 'f', test);
 	
 	// hard shadows
 	hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);

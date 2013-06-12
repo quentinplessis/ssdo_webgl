@@ -19,7 +19,7 @@ var FizzyText = function() {
 	this.lightPosZ = 0.0;
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
-	this.vsm = false;
+	this.vsm = shadowMode == 1;
 	this.shadowBlur = blurShadowMaps;
 	this.shadowMapsBlurSize = shadowMapsBlurSize;
 	// dof
