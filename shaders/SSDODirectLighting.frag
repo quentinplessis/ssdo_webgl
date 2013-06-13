@@ -32,6 +32,7 @@ uniform float lightsIntensity[2];
 varying vec2 vUv;
 
 //SSDO parameters
+uniform vec3 randomDirections[NUMBER_OF_SAMPLES_MAX];
 uniform int numberOfSamples;
 uniform float numberOfSamplesF;
 uniform float rmax;
@@ -59,7 +60,7 @@ vec3 randomDirection(float x) {
 
 float randomNumberForDirectionsTexture(float x, float y) {
 //	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
-	float number = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).x; //Choose x but yzw are also random.
+	float number = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w; //Choose x but yzw are also random.
 	return number;
 }
 
@@ -68,7 +69,7 @@ float randomNumberForDirectionsTexture(float x, float y) {
 vec4 computeRadiance(vec3 samplePosition)
 {
 	vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
-	for(int j = 0 ; j < 1 ; j++)
+	for(int j = 0 ; j < 2 ; j++)
 	{
 		//Visibility Test...
 		vec4 lightSpacePos4 = lightsView[j] * vec4(samplePosition,1.0);
@@ -118,9 +119,14 @@ void main()
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
 	
-		vec3 vector = normalize(vec3(0.0,1.0,1.0));
-	//	vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
-		vec3 tangent = normalize(cross(vector, normal));
+		float r1 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).x-1.0; 
+		float r2 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).y-1.0;
+		float r3 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).z-1.0; 
+		
+	//	vec3 vector = normalize(vec3(0.0,1.0,1.0));
+		vec3 vector = normalize(vec3(r1,r2,r3));
+		vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
+	//	vec3 tangent = normalize(cross(vector, normal));
 		vec3 bitangent = normalize(cross(normal, tangent));
 		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
 	//	mat3 normalSpaceMatrixInverse;
@@ -139,6 +145,7 @@ void main()
 		vec3 directions[NUMBER_OF_SAMPLES_MAX];
 		vec3 samplesPosition[NUMBER_OF_SAMPLES_MAX];
 		vec4 projectionInCamSpaceSample[NUMBER_OF_SAMPLES_MAX];
+		float visibility = 0.0;
 
 		//samplesVisibility[i] = true if sample i is not occulted
 		bool samplesVisibility[NUMBER_OF_SAMPLES_MAX];
@@ -162,15 +169,18 @@ void main()
 
 		//	sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
 
-			sampleDirection = normalize(randomDirection(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y)));
+		//	sampleDirection = normalize(randomDirection(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y)));
+			sampleDirection = randomDirections[i];
 			sampleDirection = normalize(normalSpaceMatrix * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
-			directions[i] = sampleDirection;
+		//	directions[i] = sampleDirection;
 		//	r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
-			r4 = texture2D(randomDirectionsTexture, vec2(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y),0.0)).w * rmax;
+			r4 = texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).w; 
+		//	r4 = texture2D(randomDirectionsTexture, vec2(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y),0.0)).w * rmax;
 
 //	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
-			samplesPosition[i] = position + bias*normal + r4*sampleDirection;
+		//	samplesPosition[i] = position + bias*normal + r4*sampleDirection;
 
+			samplesPosition[i] = position + bias*normal + r4 * sampleDirection;
 			//Samples are back projected to the image
 			camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
 			projectionInCamSpaceSample[i] = (cameraProjectionM * camSpaceSample);
@@ -189,11 +199,12 @@ void main()
 					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
 					{
 						samplesVisibility[i] = false; //The sample is an eventual occluder
-						//Depth peeling
+
 						secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
 						if(distanceCameraSample>secondDepth)//The sample is behind an object
 						{
 							samplesVisibility[i] = true; //The sample is visible
+							visibility += 1.0/numberOfSamplesF;
 							gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
 						}	
 

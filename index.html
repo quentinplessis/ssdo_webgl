@@ -98,8 +98,9 @@
 
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
-		var ssdoIndirectBounceShader, ssdoFinalBuffer;
+		var ssdoIndirectBounceShader, ssdoIndirectBounceBuffer;
 		var ssdoBlurShader, ssdoBlurBuffer;
+		var ssdoFinalShader, ssdoFinalBuffer;
 		
 		var scenes = [];
 		var currentScene = "scene1";
@@ -112,7 +113,7 @@
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
+			names: ['shadowMap1', 'ssdoDirect', 'ssdoBlur', 'ssdoFinal']};
 
 		customDisplays['ssao'] = {cols: 2, rows: 2, 
 			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
@@ -413,10 +414,14 @@
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
-				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);
 				// ssdo blur pass
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
+				// ssdo final pass
+				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+
 			}
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
