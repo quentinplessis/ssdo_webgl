@@ -13,6 +13,7 @@ uniform sampler2D randomTexture;
 uniform sampler2D randomDirectionsTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
+uniform sampler2D phongTexture;
 
 // screen properties
 uniform vec2 texelSize;
@@ -205,7 +206,8 @@ void main()
 						{
 							samplesVisibility[i] = true; //The sample is visible
 							visibility += 1.0/numberOfSamplesF;
-							gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+						//	gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+							gl_FragColor += 2.0*texture2D(phongTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
 						}	
 
 
@@ -216,12 +218,14 @@ void main()
 						samplesVisibility[i] = true; //The sample is visible
 
 						//compute the incoming radiance coming in the direction sampleDirection
-						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+					//	gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+						gl_FragColor += 2.0*texture2D(phongTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
 					}	
 				}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
 				else//If the sample is in the background it is always visible
 				{
-						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+					//	gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+						gl_FragColor += 2.0*texture2D(phongTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
 				}
 			}//End SampleUV between  0.0 and 0.1
 			else

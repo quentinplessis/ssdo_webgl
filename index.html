@@ -113,11 +113,10 @@
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'ssdoDirect', 'ssdoBlur', 'ssdoFinal']};
+			names: ['shadowMap1', 'ssdoDirect', 'ssdoIndirectBounce', 'ssdoFinal']};
 
 		customDisplays['ssao'] = {cols: 2, rows: 2, 
 			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
-		//	names: ['ssaoOnly']};
 		
 		customDisplays['dof'] = {cols: 2, rows: 2, 
 			names: ['dofBlurAux', 'dofBlur', 'dofImage', 'hardShadows']};
@@ -277,7 +276,7 @@
 				renderer.render(scene, camera, rtTextures['diffuse'], true);
 			}
 			
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo') {
 				// 4th rendering : phong rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					if (objects[i].composedObject) {

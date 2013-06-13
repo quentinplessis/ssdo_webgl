@@ -179,6 +179,7 @@ function initShaders() {
 	ssdoDirectLightingShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
 	ssdoDirectLightingShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
 	ssdoDirectLightingShader.setUniform('randomDirections', 'v3v', randomDirections);
+	ssdoDirectLightingShader.setUniform('phongTexture', 't', rtTextures['phong']);
 	ssdoDirectLightingShader.setUniform('rmax', 'f', rmax);
 	
 	ssdoIndirectBounceBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -207,6 +208,7 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
 	ssdoIndirectBounceShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
 	ssdoIndirectBounceShader.setUniform('randomDirections', 'v3v', randomDirections);
+	ssdoIndirectBounceShader.setUniform('phongTexture', 't', rtTextures['phong']);
 	ssdoIndirectBounceShader.setUniform('rmax', 'f', rmax);
 
 	ssdoBlurBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
