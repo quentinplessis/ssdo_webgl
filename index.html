@@ -68,7 +68,9 @@
 		var texturedPhong, texturedPhongTexture;
 
 		var secondDepthShader, secondDepthTexture;		
-		var shadowMaps = [], shadowMapsResolution = 64;
+		var shadowMaps = [], shadowMapsResolution = 64, shadowMapsFullResolution = 256;
+		var shadowMapAux, shadowMapAux2, shadowMapBlurShader, blurShadowMaps = false;
+		var smScene, shadowMapsBlurSize = 4.0;
 
 		var hardShadowsShader, hardShadowsTexture;
 		var shadowMapsDownSampled = [];
@@ -76,17 +78,19 @@
 		var dofScene, dofQuad;
 		var DOFBlurTexture, DOFBlurShader;
 		var DOFImageTexture, DOFImageShader;
-		var dofAuxTexture;
+		var dofAuxTexture, dofResolution = 256;
 		
 		var worldToMillimeter = 10;
 		var camMill = 35;
 		//var focal = 50;
 		var focal = 180 * camMill / (Math.PI * viewAngle);
-		var focusDistance = 300, blurCoeff;
+		focal = 80;
+		var focusDistance = 380, blurCoeff;
 		//var ppm = 36.57;
 		var ppm = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight) / camMill;
 		//var fStop = 2.8,
 		var fStop = ppm;
+		fStop = 20;
 		
 		var ssaoScene, ssaoQuad;
 		var ssaoOnlyShader, ssaoOnlyBuffer;
@@ -104,7 +108,7 @@
 		var customDisplays = [];
 		customDisplays['normal'] = {cols: 2	, rows: 3, 
 			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'phong']};
-		customDisplays['all'] = {cols: 4, rows: 3, all: true};
+		customDisplays['all'] = {cols: 4, rows: 4, all: true};
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
@@ -114,8 +118,8 @@
 			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
 		//	names: ['ssaoOnly']};
 		
-		customDisplays['dof'] = {cols: 2, rows: 1, 
-			names: ['dofBlur', 'dofImage']};
+		customDisplays['dof'] = {cols: 2, rows: 2, 
+			names: ['dofBlurAux', 'dofBlur', 'dofImage', 'hardShadows']};
 			
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
@@ -154,6 +158,8 @@
 		function refactorShadowMaps() {
 			for (var i = 0 ; i < lights.length ; i++)
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+			shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
+			shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[0]);
@@ -202,6 +208,10 @@
 			}
 			else if (event.keyCode == 82) { // r
 				MODE = 'random';
+				displayManager.display(customDisplays[MODE]);
+			}
+			else if (event.keyCode == 70) { // f
+				MODE = 'dof';
 				displayManager.display(customDisplays[MODE]);
 			}
 			else if (event.keyCode == 37) { // left
@@ -325,8 +335,23 @@
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
-				renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
-				renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
+				if (shadowMode == 1 && blurShadowMaps) {
+					for (var i = 0 ; i < lights.length ; i++) {
+						renderer.render(scene, lightsCameras[i], shadowMapAux, true);
+						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux);
+						shadowMapBlurShader.setUniform('orientation', 'i', 0);
+						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
+						renderer.render(smScene, cameraRTT, shadowMapAux2, true);
+						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux2);
+						shadowMapBlurShader.setUniform('orientation', 'i', 1);
+						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
+						renderer.render(smScene, cameraRTT, shadowMaps[i], true);
+					}
+				}
+				else {
+					renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
+					renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
+				}
 			}
 			
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof') { // || MODE == 'ssdo') {

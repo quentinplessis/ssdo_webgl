@@ -21,6 +21,7 @@ scenes["scene1"].loadWorld = function() {
 	objects[0] = new THREE.Mesh(sphereGeometry);
 	//objects[0].rotation.y = Math.PI / 2;
 	objects[0].position.y = -50;
+	objects[0].position.z = 50;
 	materials[0] = jQuery.extend(true, {}, blankMaterial);
 	materials[0]['matSpecular'] = 0.5;
 	materials[0]['matDiffuseColor'] = new THREE.Vector4(1.0, 0.0, 0.0, 1.0);
@@ -39,8 +40,9 @@ scenes["scene1"].loadWorld = function() {
 	// off importation
 	
 	loadOFF('models/monkey.off');
-	objects[1].position.x = 150;	
+	objects[1].position.x = 150;
 	objects[1].position.y = -50;
+	objects[1].position.z = -100;
 	materials[1] = jQuery.extend(true, {}, blankMaterial);
 	materials[1]['matDiffuseColor'] = new THREE.Vector4(0.2, 1.0, 0.2, 1.0);
 	materials[1]['matSpecular'] = 0.8;

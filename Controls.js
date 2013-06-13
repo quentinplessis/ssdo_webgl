@@ -19,9 +19,11 @@ var FizzyText = function() {
 	this.lightPosZ = 0.0;
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
-	this.vsm = false;
+	this.vsm = shadowMode == 1;
+	this.shadowBlur = blurShadowMaps;
+	this.shadowMapsBlurSize = shadowMapsBlurSize;
 	// dof
-	this.dofResolution = 256;
+	this.dofResolution = dofResolution;
 	this.focusDistance = focusDistance;
 	this.focal = focal;
 	this.fStop = fStop;
@@ -50,7 +52,7 @@ function initControls(json) {
 		initDisplayManager();
 		render();
 	});
-	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo'}).name('Grid').onChange(function(value) {
+	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo', 'Depth of Field': 'dof'}).name('Grid').onChange(function(value) {
 		MODE = value;
 		displayManager.display(customDisplays[MODE]);
 		render();
@@ -62,7 +64,7 @@ function initControls(json) {
 	});
 	displaysFolder.add(text, 'nextView').name('Next view');
 	displaysFolder.add(text, 'previousView').name('Previous view');
-	displaysFolder.open();
+	//displaysFolder.open();
 	
 	var lightsFolder = gui.addFolder('Lights');
 	lightsFolder.add(text, 'skyLightIntensity', 0, 1).step(0.05).name('Sky light').onChange(function(value) {
@@ -160,14 +162,29 @@ function initControls(json) {
 		hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
 		render();
 	});
+	shadowsFolder.add(text, 'shadowBlur').name("Blur").onChange(function(value) {
+		blurShadowMaps = value;
+		render();
+	});
+	shadowsFolder.add(text, 'shadowMapsBlurSize', 0.0, 30.0).name("Blur size").onChange(function(value) {
+		shadowMapsBlurSize = value;
+		shadowMapBlurShader.setUniform('blurSize', 'f', shadowMapsBlurSize);
+		render();
+	});
 	shadowsFolder.open();
 	
 	var dofFolder = gui.addFolder("Depth of Field");
 	dofFolder.add(text, 'dofResolution', 0, 512).name("Blur resolution").onChange(function(value) {
-		
+		dofResolution = Math.round(value);
+		DOFBlurTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
+		dofAuxTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
+		DOFImageShader.setUniform('dofBlur', 't', DOFBlurTexture);
+		displayManager.addSimpleTexture(DOFBlurTexture, 'dofBlur');
+		displayManager.addSimpleTexture(dofAuxTexture, 'dofBlurAux');
+		displayManager.organize();
 		render();
 	});
-	dofFolder.add(text, 'focusDistance', 0, 1000).name("Focus distance").onChange(function(value) {
+	dofFolder.add(text, 'focusDistance', 0, 1500).name("Focus distance").onChange(function(value) {
 		focusDistance = value;
 		blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
 		DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
@@ -176,7 +193,7 @@ function initControls(json) {
 		DOFImageShader.setUniform('focusDistance', 'f', focusDistance);
 		render();
 	});
-	dofFolder.add(text, 'focal', 0, 100).name("Focal").onChange(function(value) {
+	dofFolder.add(text, 'focal', 0, 200).name("Focal").onChange(function(value) {
 		focal = value;
 		blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
 		DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);

@@ -19,6 +19,8 @@ function processLights() {
 	
 		shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 	}
+	shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
+	shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
 }
 
 function initLights() {
@@ -65,12 +67,18 @@ function initShaders() {
 	secondDepthShader.setUniform('screenHeight', 'f', window.innerHeight);
 	secondDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 
-
 	// shadow mapping
 	shadowMapsShader = new Shader();
 	shadowMapsShader.loadShader('shaders/shadowMaps.vert', 'vertex');
 	shadowMapsShader.loadShader('shaders/shadowMaps.frag', 'fragment');
 	shadowMapsShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	
+	shadowMapBlurShader = new Shader();
+	shadowMapBlurShader.loadShader('shaders/texture.vert', 'vertex');
+	shadowMapBlurShader.loadShader('shaders/shadowMapBlur.frag', 'fragment');
+	shadowMapBlurShader.setUniform('texelSize', 'v2', texelSize);
+	var test = 4.0;
+	shadowMapBlurShader.setUniform('blurSize', 'f', test);
 	
 	// hard shadows
 	hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -96,11 +104,11 @@ function initShaders() {
 	
 	// depth-of-field
 	blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
-	DOFBlurTexture = new THREE.WebGLRenderTarget(256, 256, options);
+	DOFBlurTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
+	dofAuxTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
 	DOFBlurShader = new Shader();
 	DOFBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	DOFBlurShader.loadShader('shaders/DOFBlur.frag', 'fragment');
-	//DOFBlurShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	DOFBlurShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	DOFBlurShader.setUniform('texelSize', 'v2', texelSize);
 	DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
@@ -113,7 +121,6 @@ function initShaders() {
 	DOFImageShader = new Shader();
 	DOFImageShader.loadShader('shaders/texture.vert', 'vertex');
 	DOFImageShader.loadShader('shaders/DOFImage.frag', 'fragment');
-	//DOFImageShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	DOFImageShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	DOFImageShader.setUniform('dofBlur', 't', DOFBlurTexture);
 	DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
@@ -263,6 +270,11 @@ function initScene() {
 	dofQuad = new THREE.Mesh(plane);
 	dofScene.add(dofQuad);
 	
+	// shadow maps blur
+	smScene = new THREE.Scene();
+	smQuad = new THREE.Mesh(plane);
+	smScene.add(smQuad);
+	
 	// ssao
 	ssaoScene = new THREE.Scene();
 	ssaoQuad = new THREE.Mesh(plane);
@@ -299,6 +311,7 @@ function initDisplayManager() {
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
+	displayManager.addSimpleTexture(dofAuxTexture, 'dofBlurAux');
 	displayManager.addSimpleTexture(DOFBlurTexture, 'dofBlur');
 	displayManager.addSimpleTexture(DOFImageTexture, 'dofImage');
 	displayManager.addSimpleTexture(ssaoOnlyBuffer, 'ssaoOnly');

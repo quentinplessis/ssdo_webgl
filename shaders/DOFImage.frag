@@ -7,20 +7,18 @@ uniform sampler2D normalsAndDepthBuffer;
 uniform sampler2D dofBlur;
 varying vec2 vUv;
 
-uniform float blurCoefficient;  // Calculated from the blur equation, b = ( f * ms / N )
-uniform float focusDistance;    // The distance to the subject in perfect focus (= Ds)
-uniform float near;     // Near clipping plane
-uniform float far;      // Far clipping plane
-uniform float PPM;      // Pixels per millimetre
+uniform float blurCoefficient;
+uniform float focusDistance;
+uniform float near;
+uniform float far;
+uniform float PPM;
 
 float GetBlurDiameter (float d) {
 	// Convert from linear depth to metres
-	float Dd = d;// * (far - near);
-
+	float Dd = d;
 	float xd = abs(Dd - focusDistance);
 	float xdd = (Dd < focusDistance) ? (focusDistance - xd) : (focusDistance + xd);
-	//float b = blurCoefficient * (xd / xdd);
-	float b = 1.0 * (xd / xdd);
+	float b = blurCoefficient * (xd / xdd);
 
 	return b * PPM;
 }
