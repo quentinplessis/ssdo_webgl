@@ -2,6 +2,8 @@
 precision highp float;
 #endif
 
+#define NUMBER_OF_SAMPLES_MAX 32
+
 // input buffers
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
@@ -24,6 +26,11 @@ uniform mat4 lightsProj[2];
 uniform vec3 lightsPos[2];
 uniform vec4 lightsColor[2];
 uniform float lightsIntensity[2];
+
+//SSDO parameters
+uniform int numberOfSamples;
+uniform float numberOfSamplesF;
+uniform float rmax;
 
 vec4 spacePos(vec2 screenPos) {
 	vec2 uv = vec2(screenPos.x / screenWidth, screenPos.y / screenHeight);
@@ -87,17 +94,12 @@ void main()
 		normalSpaceMatrixInverse [2][0] = normalSpaceMatrix [0][2];
 		normalSpaceMatrixInverse [2][1] = normalSpaceMatrix [1][2];
 
-		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 8;
-		const float numberOfSamplesF = 8.0;
-		const float rmax = 5.0;
-		
-		vec3 directions[numberOfSamples];
-		vec3 samplesPosition[numberOfSamples];
-		vec4 projectionInCamSpaceSample[numberOfSamples];
+		vec3 directions[NUMBER_OF_SAMPLES_MAX];
+		vec3 samplesPosition[NUMBER_OF_SAMPLES_MAX];
+		vec4 projectionInCamSpaceSample[NUMBER_OF_SAMPLES_MAX];
 
 		//samplesVisibility[i] = true if sample i is not occulted
-		bool samplesVisibility[numberOfSamples];
+		bool samplesVisibility[NUMBER_OF_SAMPLES_MAX];
 
 		//Generate numberOfSamples random directions and random samples (uniform distribution)
 		//The samples are in the hemisphere oriented by the normal vector	

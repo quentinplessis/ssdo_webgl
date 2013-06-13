@@ -1,6 +1,7 @@
 #ifdef GL_ES
 precision highp float;
 #endif
+#define NUMBER_OF_SAMPLES_MAX 32
 
 // input buffers
 uniform sampler2D positionsBuffer;
@@ -27,6 +28,11 @@ uniform float lightsIntensity[2];
 //3D point properties
 varying vec2 vUv;
 
+//Number of samples we use for the SSAO algorithm
+uniform int numberOfSamples;
+uniform float numberOfSamplesF;
+uniform float rmax;
+
 float randomFloat(float x, float y, float from, float to) 
 {
 	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
@@ -46,9 +52,9 @@ void main()
 	float bias = 0.01;
 	vec4 currentPos = texture2D(positionsBuffer,vUv);
 	float visibilityFactor = 0.0;
-	if (currentPos.a == 0.0) // the current point is not in the background
-	{
-		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+	
+//	if (currentPos.a == 0.0) // the current point is not in the background
+//	{
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
 	
@@ -58,14 +64,11 @@ void main()
 		vec3 bitangent = normalize(cross(normal, tangent));
 		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
 	
-		//Number of samples we use for the SSAO algorithm
-		const int numberOfSamples = 8;
-		const float numberOfSamplesF = 8.0;
-		const float rmax = 5.0;
+		float invNumberOfSamplesF = 1.0/numberOfSamplesF;
 		
-	//	vec3 directions[numberOfSamples];
-		vec3 samplesPosition[numberOfSamples];
-		vec4 projectionInCamSpaceSample[numberOfSamples];
+		vec3 directions[NUMBER_OF_SAMPLES_MAX];
+		vec3 samplesPosition[NUMBER_OF_SAMPLES_MAX];
+		vec4 projectionInCamSpaceSample[NUMBER_OF_SAMPLES_MAX];
 
 		//samplesVisibility[i] = true if sample i is not occulted
 	//	bool samplesVisibility[numberOfSamples];
@@ -97,47 +100,49 @@ void main()
 			//Determines if the sample is visible or not
 			float distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
 
-			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
-			{
+		//	if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
+		//	{
 				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
-				if (sampleProjectionOnSurface.a == 0.0) // not in the background
-				{
+			//	if (sampleProjectionOnSurface.a == 0.0) // not in the background
+			//	{
 					float	distanceCameraSampleProjection = texture2D(normalsAndDepthBuffer,sampleUV).a;
-					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
-					{
+				//	if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
+				//	{
 					//	samplesVisibility[i] = false; //The sample is an eventual occluder
 						//Depth peeling
 						float secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
-						if(distanceCameraSample>secondDepth)//The sample is behind an object
-						{
+				//		if(distanceCameraSample>secondDepth)//The sample is behind an object
+				//		{
 							//samplesVisibility[i] = true; //The sample is visible
-							visibilityFactor += 1.0/numberOfSamplesF;
-						}	
-					}
-					else
-					{
+				//			visibilityFactor += 1.0/numberOfSamplesF;
+				//		}	
+				//	}
+				//&	else
+				//	{
 						//Direct illumination is calculted with visible samples
 					//	samplesVisibility[i] = true; //The sample is visible
-						visibilityFactor += 1.0/numberOfSamplesF;
-					}	
-				}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
-				else//If the sample is in the background it is always visible
-				{
-					visibilityFactor += 1.0/numberOfSamplesF;
-				}
-			}//End SampleUV between  0.0 and 0.1
-			else
-			{
+				//		visibilityFactor += 1.0/numberOfSamplesF;
+				//	}
+				
+					visibilityFactor += step( sampleProjectionOnSurface.a,0.1)*step(0.0,sampleUV.x)*step(0.0,sampleUV.y)*step(sampleUV.x,1.0)*step(sampleUV.y,1.0)*(step(distanceCameraSampleProjection+bias, distanceCameraSample)*step(secondDepth, distanceCameraSample)+step(distanceCameraSample,distanceCameraSampleProjection+bias))*invNumberOfSamplesF;	
+			//	}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
+			//	else//If the sample is in the background it is always visible
+			//	{
+			//		visibilityFactor += 1.0/numberOfSamplesF;
+			//	}
+		//	}//End SampleUV between  0.0 and 0.1
+		//	else
+		//	{
 			//	gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
-			}
+		//	}
 		
 			ii += 1.0; // rand
 		}//End for on samples
-	}//End if (currentPos.a == 0.0) // the current point is not in the background
-	else
-	{
-		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);
-	}
+//	}//End if (currentPos.a == 0.0) // the current point is not in the background
+//	else
+//	{
+//		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);
+//	}
 		
 	gl_FragColor = vec4(visibilityFactor, visibilityFactor, visibilityFactor, 1.0);
 	

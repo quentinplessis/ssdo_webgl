@@ -2,12 +2,15 @@
 precision highp float;
 #endif
 
+#define NUMBER_OF_SAMPLES_MAX 32
+
 // input buffers
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
 uniform sampler2D secondDepthBuffer;
 uniform sampler2D diffuseTexture;
 uniform sampler2D randomTexture;
+uniform sampler2D randomDirectionsTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
 
@@ -28,17 +31,38 @@ uniform float lightsIntensity[2];
 //3D point properties
 varying vec2 vUv;
 
+//SSDO parameters
+uniform int numberOfSamples;
+uniform float numberOfSamplesF;
+uniform float rmax;
+
 float bias = 0.01;
 
 float randomFloat(float x, float y, float from, float to) {
-	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
+//	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
+	return texture2D(randomDirectionsTexture, vec2(x * texelSize.x*100.0, 0.0)).w * (to - from) + from;
 }
 
-vec3 randomDirection(float x, float y) {
-	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
+//vec3 randomDirection(float x, float y) {
+//	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
+//	vec3 data = texture2D(randomDirectionsTexture, vec2(x * texelSize.x* 100.0, 0.0)).xyz ;
+//	data.xy = 2.0 * data.xy -1.0;
+//	return data;
+//}
+
+vec3 randomDirection(float x) {
+//	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
+	vec3 data = texture2D(randomDirectionsTexture, vec2(x, 0.0)).xyz ;
 	data.xy = 2.0 * data.xy -1.0;
 	return data;
 }
+
+float randomNumberForDirectionsTexture(float x, float y) {
+//	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
+	float number = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).x; //Choose x but yzw are also random.
+	return number;
+}
+
 
 //compute the incoming radiance coming to the sample
 vec4 computeRadiance(vec3 samplePosition)
@@ -99,10 +123,10 @@ void main()
 		vec3 tangent = normalize(cross(vector, normal));
 		vec3 bitangent = normalize(cross(normal, tangent));
 		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
-		mat3 normalSpaceMatrixInverse;
+	//	mat3 normalSpaceMatrixInverse;
 
 		//Transpose normalSpaceMatrix = inverse matrix
-		normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
+	/*	normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
 		normalSpaceMatrixInverse [1][1] = normalSpaceMatrix [1][1];
 		normalSpaceMatrixInverse [2][2] = normalSpaceMatrix [2][2];
 		normalSpaceMatrixInverse [0][1] = normalSpaceMatrix [1][0];
@@ -111,55 +135,62 @@ void main()
 		normalSpaceMatrixInverse [1][2] = normalSpaceMatrix [2][1];
 		normalSpaceMatrixInverse [2][0] = normalSpaceMatrix [0][2];
 		normalSpaceMatrixInverse [2][1] = normalSpaceMatrix [1][2];
-
-		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 8;
-		const float numberOfSamplesF = 8.0;
-		const float rmax = 10.0;
-		
-		vec3 directions[numberOfSamples];
-		vec3 samplesPosition[numberOfSamples];
-		vec4 projectionInCamSpaceSample[numberOfSamples];
+*/
+		vec3 directions[NUMBER_OF_SAMPLES_MAX];
+		vec3 samplesPosition[NUMBER_OF_SAMPLES_MAX];
+		vec4 projectionInCamSpaceSample[NUMBER_OF_SAMPLES_MAX];
 
 		//samplesVisibility[i] = true if sample i is not occulted
-		bool samplesVisibility[numberOfSamples];
+		bool samplesVisibility[NUMBER_OF_SAMPLES_MAX];
 
+		vec3 sampleDirection = vec3(0.0,0.0,0.0);
+		float r4;
+		vec4 camSpaceSample;
+		vec2 screenSpacePositionSampleNormalized;
+		vec2 sampleUV;
+
+		float distanceCameraSample;
+		vec4 sampleProjectionOnSurface;
+		float distanceCameraSampleProjection;
+		float secondDepth;
 		//Generate numberOfSamples random directions and random samples (uniform distribution)
 		//The samples are in the hemisphere oriented by the normal vector	
 		float ii = 0.0;
 		for(int i = 0 ; i<numberOfSamples ; i++)
 		{
 			// random numbers
-			vec3 sampleDirection = vec3(0.0,0.0,0.0);
 
-			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
+		//	sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
 
+			sampleDirection = normalize(randomDirection(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y)));
 			sampleDirection = normalize(normalSpaceMatrix * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
 			directions[i] = sampleDirection;
-			float r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
-		
+		//	r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
+			r4 = texture2D(randomDirectionsTexture, vec2(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y),0.0)).w * rmax;
+
+//	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
 			samplesPosition[i] = position + bias*normal + r4*sampleDirection;
 
 			//Samples are back projected to the image
-			vec4 camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
+			camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
 			projectionInCamSpaceSample[i] = (cameraProjectionM * camSpaceSample);
-			vec2 screenSpacePositionSampleNormalized = projectionInCamSpaceSample[i].xy/(projectionInCamSpaceSample[i].w);
-			vec2 sampleUV = screenSpacePositionSampleNormalized*0.5 + 0.5;
+			screenSpacePositionSampleNormalized = projectionInCamSpaceSample[i].xy/(projectionInCamSpaceSample[i].w);
+			sampleUV = screenSpacePositionSampleNormalized*0.5 + 0.5;
 
 			//Determines if the sample is visible or not
-			float distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
+			distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
 
 			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
 			{
-				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
+				sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
 				if (sampleProjectionOnSurface.a == 0.0) // not in the background
 				{
-					float	distanceCameraSampleProjection = texture2D(normalsAndDepthBuffer,sampleUV).a;
+					distanceCameraSampleProjection = texture2D(normalsAndDepthBuffer,sampleUV).a;
 					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
 					{
 						samplesVisibility[i] = false; //The sample is an eventual occluder
 						//Depth peeling
-						float secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
+						secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
 						if(distanceCameraSample>secondDepth)//The sample is behind an object
 						{
 							samplesVisibility[i] = true; //The sample is visible

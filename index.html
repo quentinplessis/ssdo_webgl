@@ -120,10 +120,10 @@
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
-		var MODE = 'ssao', ANIMATION = false;
+		var MODE = 'ssdo', ANIMATION = false;
 		var shadowMode = 0; // hardShadows
 		
-		var randomTexture;
+		var randomDirectionsTexture, randomTexture;
 		
 		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
 			//magFilter: THREE.LinearFilter,  // we want nice filtering
@@ -156,9 +156,9 @@
 				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
-			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			ssdoDirectLightingShader.setUniform('shadowMap1', 't', shadowMaps[1]);
-			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[1]);
+			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			ssdoIndirectBounceShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 			displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
