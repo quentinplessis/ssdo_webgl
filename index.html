@@ -92,6 +92,10 @@
 		var fStop = ppm;
 		fStop = 20;
 		
+		var velocityTexture, velocityShader, motionBlurTexture, motionBlurShader;
+		var previousCameraViewMatrix;
+		var mbIntensity = 1.0, mbSamples = 4.0;
+		
 		var ssaoScene, ssaoQuad;
 		var ssaoOnlyShader, ssaoOnlyBuffer;
 		var ssaoDiffuseShader, ssaoDiffuseBuffer;
@@ -124,7 +128,10 @@
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
-		var MODE = 'shadows', ANIMATION = false;
+		customDisplays['motionBlur'] = {cols: 2, rows: 1, 
+			names: ['velocity', 'motionBlur']};
+		
+		var MODE = 'motionBlur', ANIMATION = false;
 		var shadowMode = 0; // hardShadows
 		
 		var randomTexture;
@@ -214,6 +221,10 @@
 				MODE = 'dof';
 				displayManager.display(customDisplays[MODE]);
 			}
+			else if (event.keyCode == 77) { // m
+				MODE = 'motionBlur';
+				displayManager.display(customDisplays[MODE]);
+			}
 			else if (event.keyCode == 37) { // left
 				if (!displayManager.previousView()) { MODE = 'all'; } render();
 			}
@@ -229,16 +240,18 @@
 			}
 			render();
 		}
+		
+		var outof = 0;
 	
 		function render() {
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
 				// 1st rendering : computes depth and normals
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
 				renderer.render(scene, camera, normalsAndDepthTexture, true);	
 			}
 			
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture' || MODE == 'dof') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture' || MODE == 'dof' || MODE == 'motionBlur') {
 				// 2nd rendering : diffuse map rendering
 				for (var i = 0 ; i < objects.length ; i++) {
 					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -331,7 +344,7 @@
 
 			}
 
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
@@ -354,7 +367,7 @@
 				}
 			}
 			
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof') { // || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') { // || MODE == 'ssdo') {
 				for (var i = 0 ; i < objects.length ; i++) {
 					if (objects[i].composedObject) {
 						//hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
@@ -374,6 +387,32 @@
 					}
 				}
 				renderer.render(scene, camera, hardShadowsTexture, true);
+			}
+			
+			if (MODE == 'all' || MODE == 'motionBlur') {
+				velocityShader.setUniform('previousViewMatrix', 'm4', previousCameraViewMatrix);
+				var oLength = objects.length;
+				while (oLength--) {
+					velocityShader.setUniform('previousModelMatrix', 'm4', objects[oLength].previousModelMatrix);
+					objects[oLength].setMaterial(velocityShader.createMaterial());
+				}
+				renderer.render(scene, camera, velocityTexture, true);
+				screenSpaceQuad.setMaterial(motionBlurShader.createMaterial());
+				renderer.render(screenSpaceScene, cameraRTT, motionBlurTexture, true);
+				
+				if (outof >= 0) {
+					oLength = objects.length;
+					console.log(JSON.stringify(objects[0].previousModelMatrix) + " \n  " + JSON.stringify(objects[0].matrixWorld) + "\n\n");
+					while (oLength--)
+						objects[oLength].previousModelMatrix.copy(objects[oLength].matrixWorld);
+					
+					//console.log(JSON.stringify(previousCameraViewMatrix) + " \n  " + JSON.stringify(camera.matrixWorldInverse) + "\n\n");
+					previousCameraViewMatrix.copy(camera.matrixWorldInverse);
+					
+					outof = 0;
+					
+				}
+				outof++;
 			}
 			
 			if (MODE == 'all' || MODE == 'dof') {
@@ -444,13 +483,14 @@
 			currentTime = (new Date()).getTime();
 			if (ANIMATION) {
 				if (currentTime - lastTime >= interval) {
-					if (objects[0].position.y >= 100)
+					if (objects[0].position.x >= 100)
 						direction = -1;
-					if (objects[0].position.y <= -50)
+					if (objects[0].position.x <= -100)
 						direction = 1;
-					objects[0].position.y += direction * 3.0;
+					objects[0].position.x += direction * 10.0;
 					//objects[2].rotation.y += direction * 5 / 100;
 					lastTime = currentTime;
+					//scene.updateMatrixWorld();
 					render();
 				}
 			}

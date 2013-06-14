@@ -129,6 +129,29 @@ function initShaders() {
 	DOFImageShader.setUniform('far', 'f', far);
 	DOFImageShader.setUniform('PPM', 'f', ppm);
 	
+	// motion blur
+	velocityTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	velocityShader = new Shader();
+	velocityShader.loadShader('shaders/velocity.vert', 'vertex');
+	velocityShader.loadShader('shaders/velocity.frag', 'fragment');
+	velocityShader.setUniform('texelSize', 'v2', texelSize);
+	velocityShader.setUniform('intensity', 'f', mbIntensity);
+	
+	displayVelocityShader = new Shader();
+	displayVelocityShader.loadShader('shaders/texture.vert', 'vertex');
+	displayVelocityShader.loadShader('shaders/displayVelocity.frag', 'fragment');
+	displayVelocityShader.setUniform('screenWidth', 'f', window.innerWidth);
+	displayVelocityShader.setUniform('screenHeight', 'f', window.innerHeight);
+	displayVelocityShader.setUniform('texture', 't', velocityTexture);
+	
+	motionBlurTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	motionBlurShader = new Shader();
+	motionBlurShader.loadShader('shaders/texture.vert', 'vertex');
+	motionBlurShader.loadShader('shaders/MotionBlur.frag', 'fragment');
+	motionBlurShader.setUniform('velocityTexture', 't', velocityTexture);
+	motionBlurShader.setUniform('colorTexture', 't', hardShadowsTexture);
+	motionBlurShader.setUniform('samplesNumber', 'f', mbSamples);
+	
 	var samplesNumber = 8;
 	randomTexture = createRandTexture(window.innerWidth, window.innerHeight * samplesNumber, 4);
 	randomShader = new Shader();
@@ -231,6 +254,14 @@ function initShaders() {
 	ssaoDiffuseShader.setUniform('lightsProj', 'm4v', lightsProj);
 }
 
+function processObjects() {
+	var oLength = objects.length;
+	while (oLength--) {
+		objects[oLength].previousModelMatrix = new THREE.Matrix4();
+		objects[oLength].previousModelMatrix.copy(objects[oLength].matrixWorld);
+	}
+}
+
 // Initialization of the world
 function initScene() {
 	scene = new THREE.Scene();
@@ -248,6 +279,10 @@ function initScene() {
 	smQuad = new THREE.Mesh(plane);
 	smScene.add(smQuad);
 	
+	screenSpaceScene = new THREE.Scene();
+	screenSpaceQuad = new THREE.Mesh(plane);
+	screenSpaceScene.add(screenSpaceQuad);
+	
 	// ssao
 	ssaoScene = new THREE.Scene();
 	ssaoQuad = new THREE.Mesh(plane);
@@ -259,6 +294,8 @@ function initScene() {
 	ssdoScene.add(ssdoQuad);
 
 	scenes[currentScene].loadWorld();
+	
+	processObjects();
 	
 	//phongShader.setAttribute('displacement', 'f', []);
 	// now populate the array of attributes
@@ -294,6 +331,8 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');
 	displayManager.addDisplay(randomShader, 'random');
 	displayManager.addCustomTexture(secondDepthTexture, 'shaders/displaySecondDepth.frag', 'secondDepth');
+	displayManager.addDisplay(displayVelocityShader, 'velocity');
+	displayManager.addSimpleTexture(motionBlurTexture, 'motionBlur');
 	displayManager.display(customDisplays[MODE]);
 }
 
@@ -327,6 +366,8 @@ function init() {
 	camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
 	camera.position.y = 200;
 	camera.position.z = 300;
+	previousCameraViewMatrix = new THREE.Matrix4();
+	previousCameraViewMatrix.copy(camera.matrixWorldInverse);
 	/*camera.position.x = -500;
 	camera.position.y = 800;
 	camera.position.z = 0;*/

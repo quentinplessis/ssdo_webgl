@@ -27,6 +27,9 @@ var FizzyText = function() {
 	this.focusDistance = focusDistance;
 	this.focal = focal;
 	this.fStop = fStop;
+	// motion blur
+	this.mbIntensity = mbIntensity;
+	this.mbSamples = mbSamples;
 };
 
 function initControls(json) {
@@ -208,4 +211,15 @@ function initControls(json) {
 		render();
 	});
 	dofFolder.open();
+	
+	var motionBlurFolder = gui.addFolder("Motion blur");
+	motionBlurFolder.add(text, 'mbIntensity', 0.0, 20.0).name("Intensity").onChange(function(value) {
+		velocityShader.setUniform('intensity', 'f', value);
+		render();
+	});
+	motionBlurFolder.add(text, 'mbSamples', 1.0, 50.0).name("Intensity").onChange(function(value) {
+		motionBlurShader.setUniform('samplesNumber', 'f', value);
+		render();
+	});
+	motionBlurFolder.open();
 }
