@@ -99,7 +99,7 @@
 		var ssdoScene, ssdoQuad;
 		var ssdoDirectLightingShader, directLightBuffer;
 		var ssdoIndirectBounceShader, ssdoIndirectBounceBuffer;
-		var ssdoBlurShader, ssdoBlurBuffer;
+		var ssdoBlurShader, ssdoBlurBuffer, ssdoBlurAuxBuffer;
 		var ssdoFinalShader, ssdoFinalBuffer;
 		
 		var scenes = [];
@@ -113,7 +113,7 @@
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'ssdoDirect', 'ssdoIndirectBounce', 'ssdoFinal']};
+			names: ['shadowMap1', 'ssdoDirect', 'ssdoBlur', 'ssdoFinal']};
 
 		customDisplays['ssao'] = {cols: 2, rows: 2, 
 			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
@@ -414,9 +414,18 @@
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);
+			
 				// ssdo blur pass
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoIndirectBounceBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoBlurAuxBuffer, true);
+			
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoBlurAuxBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(0.0,1.0/window.innerHeight));
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
+			
 				// ssdo final pass
 				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);

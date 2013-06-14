@@ -13,7 +13,6 @@ uniform sampler2D randomTexture;
 uniform sampler2D randomDirectionsTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
-uniform sampler2D phongTexture;
 
 // screen properties
 uniform vec2 texelSize;
@@ -114,11 +113,15 @@ void main()
 	//	float rand2 = 2.0*rand(vec2(rand1,position.x))-1.0; //Random number between -1.0 and 1.0
 	//	float rand3 = 2.0*rand(vec2(rand2,position.y))-1.0;
 	
-		float r1 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).x-1.0; 
-		float r2 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).y-1.0;
-		float r3 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).z-1.0; 
-		
-		vec3 vector = normalize(vec3(r1,r2,r3));
+	//	float r1 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).x-1.0; 
+	//	float r2 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).y-1.0;
+	//	float r3 = 2.0*texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).z-1.0; 
+	
+		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
+		//Precompute only numberOfSamples directions in the half positive hemisphere
+		//Add a random rotation (with normal axis)  when you put the direction in the normal space
+		//Result : less noise due to random numbers
+		vec3 vector = normalize(2.0*texture2D(randomTexture,  vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).xyz-1.0);
 
 	//	vec3 vector = normalize(vec3(0.0,1.0,1.0));
 	//	vec3 vector = normalize(vec3(rand1,rand2,rand3));
@@ -183,7 +186,7 @@ void main()
 		//	random = r4;
 	//		sampleDirection = normal;
 	//		float	r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
-			float r4 = texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).x * rmax; 
+			float r4 = texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).w * rmax; 
 		//	float r4 = texture2D(randomDirectionsTexture, vec2(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y),0.0)).w * rmax;
 		//	float r4 = texture2D(randomDirectionsTexture, vec2(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y),0.0)).w * rmax;
 		//	r4 = 200.0;
@@ -238,20 +241,19 @@ void main()
 							vec4 directLightingVector = texture2D(directLightBuffer,sampleUV);
 							vec4 diffusion = texture2D(diffuseTexture, sampleUV);
 							vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix* sampleProjectionOnSurface.xyz;
-
+							float intensity = 5.0;
 					//	if(true)
 							if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
 							{	
-								gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
-							//	gl_FragColor += texture2D(phongTexture, gl_FragCoord.xy) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
-							//	gl_FragColor += texture2D(phongTexture,gl_FragCoord.xy)*dot(transmittanceDirection, normal)*dot(transmittanceDirection, sampleNormalOnSurface)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+						//		gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//	gl_FragColor += vec4(1.0,1.0,0.0,1.0);
+								gl_FragColor += intensity * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
+							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)* pow(rmax, 2.0)* max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)* max(dot(transmittanceDirection, -normal), 0.0) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
 							//	gl_FragColor += matDiffusion(gl_FragCoord.xy) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
-							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)* pow(rmax, 1.0) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
 							//	gl_FragColor += directLightingVector;
 							//	gl_FragColor += texture2D(diffuseTexture,sampleUV);
 							//	gl_FragColor += pow(rmax, 2.0)/(numberOfSamplesF *pow(distanceSenderReceiver, 2.0) )* max(dot(transmittanceDirection, sampleNormalOnSurface), 0.0) *max(dot(transmittanceDirection, normal), 0.0) * directLightingVector;
-							//	gl_FragColor += diffusion*pow(rmax,2.0)*dot(-transmittanceDirection, normal)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
+						//		gl_FragColor += diffusion*pow(rmax,2.0)*dot(-transmittanceDirection, normal)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//	gl_FragColor += pow(rmax,1.0)*max(dot(-transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;

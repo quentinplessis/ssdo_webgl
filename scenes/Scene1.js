@@ -44,7 +44,7 @@ scenes["scene1"].loadWorld = function() {
 	objects[1].position.y = -50;
 	objects[1].position.z = -100;
 	materials[1] = jQuery.extend(true, {}, blankMaterial);
-	materials[1]['matDiffuseColor'] = new THREE.Vector4(0.2, 0.6, 0.2, 1.0);
+	materials[1]['matDiffuseColor'] = new THREE.Vector4(0.2, 0.5, 0.2, 1.0);
 	materials[1]['matSpecular'] = 0.8;
 	//materials[2]['matSpecularColor'] = new THREE.Vector4(0.0, 0.0, 1.0, 1.0);
 	scene.add(objects[1]);
@@ -62,7 +62,7 @@ scenes["scene1"].loadWorld = function() {
 	objects[3].position.x = -200;
 	objects[3].rotation.y =  Math.PI / 2;
 	materials[3] = jQuery.extend(true, {}, blankMaterial);
-	materials[3]['matDiffuseColor'] = new THREE.Vector4(0.0, 0.6, 0.0, 1.0);
+	materials[3]['matDiffuseColor'] = new THREE.Vector4(0.0, 0.3, 0.0, 1.0);
 	materials[3]['matSpecular'] = 0.2;
 	scene.add(objects[3]);
 	
