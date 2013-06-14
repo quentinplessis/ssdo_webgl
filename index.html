@@ -402,7 +402,6 @@
 				
 				if (outof >= 0) {
 					oLength = objects.length;
-					console.log(JSON.stringify(objects[0].previousModelMatrix) + " \n  " + JSON.stringify(objects[0].matrixWorld) + "\n\n");
 					while (oLength--)
 						objects[oLength].previousModelMatrix.copy(objects[oLength].matrixWorld);
 					
