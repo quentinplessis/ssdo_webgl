@@ -133,7 +133,7 @@ void main()
 		//mat3 normalSpaceMatrixInverse = transpose(normalSpaceMatrix); Transpose does not exist in GLSL 1.1
 		mat3 normalSpaceMatrixInverse;
 		//Transpose normalSpaceMatrix
-		normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
+	/*	normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
 		normalSpaceMatrixInverse [1][1] = normalSpaceMatrix [1][1];
 		normalSpaceMatrixInverse [2][2] = normalSpaceMatrix [2][2];
 		normalSpaceMatrixInverse [0][1] = normalSpaceMatrix [1][0];
@@ -142,7 +142,7 @@ void main()
 		normalSpaceMatrixInverse [1][2] = normalSpaceMatrix [2][1];
 		normalSpaceMatrixInverse [2][0] = normalSpaceMatrix [0][2];
 		normalSpaceMatrixInverse [2][1] = normalSpaceMatrix [1][2];
-
+*/
 //		float random = rand(vec2(3.8,7.9));
 
 		vec3 directions[NUMBER_OF_SAMPLES_MAX];
@@ -206,8 +206,8 @@ void main()
 			vec4 camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
 		//	float distanceCameraSample = length((camSpaceSample).xyz);//Normalize with the 4th coordinate
 			float distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
-			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
-			{
+		//	if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
+		//	{
 				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
 
 				if (sampleProjectionOnSurface.a == 0.0) // not in the background
@@ -241,10 +241,10 @@ void main()
 							vec4 directLightingVector = texture2D(directLightBuffer,sampleUV);
 							vec4 diffusion = texture2D(diffuseTexture, sampleUV);
 							vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix* sampleProjectionOnSurface.xyz;
-							float intensity = 5.0;
+							float intensity = 2.0;
 					//	if(true)
-							if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
-							{	
+						//	if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
+						//	{	
 						//		gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(transmittanceDirection, normal),0.0)*max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//	gl_FragColor += vec4(1.0,1.0,0.0,1.0);
 								gl_FragColor += intensity * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
@@ -259,7 +259,7 @@ void main()
 							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//	gl_FragColor += diffusion*pow(rmax,2.0)*max(dot(sampleDirection, normal),0.0)*max(dot(sampleDirection, sampleNormalOnSurface),0.0)/(numberOfSamplesF*pow(distanceSenderReceiver,2.0))*directLightingVector;
 							//		gl_FragColor = vec4(1.0,0.0,1.0,1.0);
-							}
+						//	}
 						}//End if verification second depth for depth peeling
 					}
 					else
@@ -275,11 +275,11 @@ void main()
 				//	gl_FragColor += directLighting(gl_FragCoord.xy);
 				//	gl_FragColor = vec4(1.0, 0.3,0.0,1.0);
 				}
-			}//End sampleUV between 0.0 and 1.0
-			else
-			{
+		//	}//End sampleUV between 0.0 and 1.0
+		//	else
+		//	{
 			//		gl_FragColor += vec4(0.05, 0.3,0.0,1.0);
-			}
+		//	}
 			ii += 1.0; // rand
 		}//End for on samples
 		//Adds direct light to the color

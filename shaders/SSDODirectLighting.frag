@@ -51,9 +51,9 @@ float randomFloat(float x, float y, float from, float to) {
 //	return data;
 //}
 
-vec3 randomDirection(float x) {
+vec3 randomDirection(float x, float i) {
 //	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
-	vec3 data = texture2D(randomDirectionsTexture, vec2(x, 0.0)).xyz ;
+	vec3 data = texture2D(randomDirectionsTexture, vec2(x, i*texelSize.y)).xyz ;
 	data.xy = 2.0 * data.xy -1.0;
 	return data;
 }
@@ -169,12 +169,12 @@ void main()
 
 		//	sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
 
-		//	sampleDirection = normalize(randomDirection(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y)));
+		//	sampleDirection = normalize(randomDirection(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y), ii));
 			sampleDirection = randomDirections[i];
 			sampleDirection = normalize(normalSpaceMatrix * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
 		//	directions[i] = sampleDirection;
 		//	r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
-			r4 = texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).w; 
+			r4 = texture2D(randomTexture, vec2(gl_FragCoord.x * texelSize.x, gl_FragCoord.y * texelSize.y)).w*rmax; 
 		//	r4 = texture2D(randomDirectionsTexture, vec2(randomNumberForDirectionsTexture(gl_FragCoord.x, gl_FragCoord.y),0.0)).w * rmax;
 
 //	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
@@ -190,8 +190,8 @@ void main()
 			//Determines if the sample is visible or not
 			distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
 
-			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
-			{
+		//	if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
+		//	{
 				sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
 				if (sampleProjectionOnSurface.a == 0.0) // not in the background
 				{
@@ -223,11 +223,12 @@ void main()
 				{
 						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
 				}
-			}//End SampleUV between  0.0 and 0.1
-			else
-			{
+		//	}//End SampleUV between  0.0 and 0.1
+		//	else
+		//	{
+		//		gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
 			//	gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
-			}
+		//	}
 		
 			ii += 1.0; // rand
 		}//End for on samples

@@ -130,7 +130,7 @@ function initShaders() {
 	DOFImageShader.setUniform('PPM', 'f', ppm);
 	
 	var numberOfSamplesF = 8.0;
-	randomDirectionsTexture = createRandTexture(1, Math.round(numberOfSamplesF), 4);
+	randomDirectionsTexture = createRandTexture(10, Math.round(numberOfSamplesF), 4);
 	randomDirectionsShader = new Shader();
 	randomDirectionsShader.setUniform('screenWidth', 'f', window.innerWidth);
 	randomDirectionsShader.setUniform('screenHeight', 'f', window.innerHeight);
@@ -214,6 +214,7 @@ function initShaders() {
 	ssdoBlurAuxBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	ssdoBlurShader = new Shader();
 	ssdoBlurShader.setUniform('positionsBuffer', 't', coordsTexture);
+	ssdoBlurShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	ssdoBlurShader.setUniform('patchSize', 'i',Math.round(patchSizeF));
 	ssdoBlurShader.setUniform('patchSizeF', 'f',patchSizeF);
 	ssdoBlurShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
@@ -224,7 +225,7 @@ function initShaders() {
 	ssdoFinalShader = new Shader();
 	ssdoFinalShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
 	ssdoFinalShader.setUniform('directLightBuffer', 't', directLightBuffer);
-	ssdoFinalShader.setUniform('indirectBounceBuffer', 't', ssdoBlurBuffer);
+	ssdoFinalShader.setUniform('indirectBounceBuffer', 't', ssdoIndirectBounceBuffer);
 	ssdoFinalShader.loadShader('shaders/texture.vert', 'vertex');
 	ssdoFinalShader.loadShader('shaders/ssdoFinal.frag', 'fragment'); 
 

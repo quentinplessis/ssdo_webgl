@@ -413,10 +413,15 @@
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
-				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);
+				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);	
+
+				// ssdo final pass
+				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+
 			
 				// ssdo blur pass
-				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoIndirectBounceBuffer);
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoFinalBuffer);
 				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurAuxBuffer, true);
@@ -426,10 +431,7 @@
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
 			
-				// ssdo final pass
-				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
-				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
-
+			
 			}
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
