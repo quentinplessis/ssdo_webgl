@@ -41,6 +41,13 @@ var DisplayManager = Class.create({
 			this.ids[name] = this.views.length;
 		this.addView(shader);
 	},
+	addCustomTextureShader: function(fromShader, texture, name) {
+		var shader = jQuery.extend(true, {}, fromShader);
+		shader.setUniform('texture', 't', texture);
+		if (name != null)
+			this.ids[name] = this.views.length;
+		this.addView(shader);
+	},
 	addGrid: function(name, viewsNames) {
 		this.grids[name] = viewsNames;
 	},

@@ -227,12 +227,14 @@
 					while (i--) {
 						renderer.render(scene, lightsCameras[i], shadowMapAux, true);
 						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux);
-						shadowMapBlurShader.setUniform('texelDirection', 'v2', horizontalTexel);
+						//shadowMapBlurShader.setUniform('texelDirection', 'v2', horizontalTexel);
+						shadowMapBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(1.0 / shadowMapsFullResolution, 0.0));
 						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
 						renderer.render(smScene, cameraRTT, shadowMapAux2, true);
 						
 						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux2);
-						shadowMapBlurShader.setUniform('texelDirection', 'v2', verticalTexel);
+						//shadowMapBlurShader.setUniform('texelDirection', 'v2', verticalTexel);
+						shadowMapBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(0.0, 1.0 / shadowMapsFullResolution));
 						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
 						renderer.render(smScene, cameraRTT, shadowMaps[i], true);
 					}
@@ -298,12 +300,12 @@
 			// Depth of field
 			if (MODE == 'all' || MODE == 'dof') {
 				// blur
-				DOFBlurShader.setUniform('orientation', 'i', 0);
+				DOFBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(1.0 / window.innerWidth, 0.0));
 				DOFBlurShader.setUniform('colorTexture', 't', shadowsTexture);
 				dofQuad.setMaterial(DOFBlurShader.createMaterial());
 				renderer.render(dofScene, cameraRTT, dofAuxTexture, true);
 			
-				DOFBlurShader.setUniform('orientation', 'i', 1);
+				DOFBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(0.0, 1.0 / dofResolution));
 				DOFBlurShader.setUniform('colorTexture', 't', dofAuxTexture);
 				dofQuad.setMaterial(DOFBlurShader.createMaterial());
 				renderer.render(dofScene, cameraRTT, DOFBlurTexture, true);

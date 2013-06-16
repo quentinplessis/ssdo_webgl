@@ -22,8 +22,5 @@ void main() {
 			count++;
 		}
 	}
-	if (count > 0.0)
-		gl_FragColor = color / count;
-	else
-		gl_FragColor = color;
+	gl_FragColor = count > 0.0 ? color / count : color;
 }

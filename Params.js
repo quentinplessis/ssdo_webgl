@@ -34,7 +34,8 @@ if (!Detector.webgl) Detector.addGetWebGLMessage();
 	var diffuseMapShader, diffuseTexture;
 	var materialShader, materialTexture;
 	var coordsShader, coordsTexture;
-	var secondDepthShader, secondDepthTexture;	
+	var secondDepthShader, secondDepthTexture;
+	var displayDepthShader, displayShadowMapShader, displayDepthNormalsShader;
 
 // Shadow maps
 	var shadowMapsResolution = 64, shadowMapsFullResolution = 256, shadowMapsBlurSize = 4.0;

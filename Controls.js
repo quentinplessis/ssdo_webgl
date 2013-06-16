@@ -14,6 +14,7 @@ var FizzyText = function() {
 	this.lightAngle = lightDefaultAngle;
 	this.skyLightIntensity = skyLightIntensity;
 	this.lightAttenuation = lightDefaultAttenuation;
+	this.lightFar = lightNearFar.y;
 	this.lightPosX = 0.0;
 	this.lightPosY = 0.0;
 	this.lightPosZ = 0.0;
@@ -126,6 +127,10 @@ function initControls(json) {
 				lightsAttenuation[i] = value;
 		else
 			lightsAttenuation[text.selectedLight] = value;
+		render();
+	});
+	lightsFolder.add(text, 'lightFar', 500.0, 10000.0).name('Far').onChange(function(value) {
+		lightNearFar.y = value;
 		render();
 	});
 	lightsFolder.add(text, 'lightPosX').name('X').onChange(function(value) {

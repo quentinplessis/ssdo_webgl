@@ -43,6 +43,21 @@ function initShaders() {
 	normalsAndDepthShader.loadShader('shaders/computesNormalsDepth.frag', 'fragment');
 	normalsAndDepthTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 
+	displayDepthShader = new Shader();
+	displayDepthShader.loadShader('shaders/texture.vert', 'vertex');
+	displayDepthShader.loadShader('shaders/displayDepth.frag', 'fragment');
+	displayDepthShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	
+	displayShadowMapShader = new Shader();
+	displayShadowMapShader.loadShader('shaders/texture.vert', 'vertex');
+	displayShadowMapShader.loadShader('shaders/displayShadowMap.frag', 'fragment');
+	displayShadowMapShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	
+	displayDepthNormalsShader = new Shader();
+	displayDepthNormalsShader.loadShader('shaders/texture.vert', 'vertex');
+	displayDepthNormalsShader.loadShader('shaders/displayDepthNormals.frag', 'fragment');
+	displayDepthNormalsShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	
 	// SSDO required inputs
 	coordsShader = new Shader();
 	coordsShader.loadShader('shaders/computesCoords.vert', 'vertex');
@@ -73,7 +88,6 @@ function initShaders() {
 	shadowMapBlurShader = new Shader();
 	shadowMapBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	shadowMapBlurShader.loadShader('shaders/shadowMapBlur.frag', 'fragment');
-	shadowMapBlurShader.setUniform('texelSize', 'v2', texelSize);
 	var test = 4.0;
 	shadowMapBlurShader.setUniform('blurSize', 'f', test);
 	
@@ -106,7 +120,6 @@ function initShaders() {
 	DOFBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	DOFBlurShader.loadShader('shaders/DOFBlur.frag', 'fragment');
 	DOFBlurShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
-	DOFBlurShader.setUniform('texelSize', 'v2', texelSize);
 	DOFBlurShader.setUniform('blurCoefficient', 'f', blurCoeff);
 	DOFBlurShader.setUniform('focusDistance', 'f', focusDistance);
 	DOFBlurShader.setUniform('near', 'f', near);
@@ -136,8 +149,6 @@ function initShaders() {
 	displayVelocityShader = new Shader();
 	displayVelocityShader.loadShader('shaders/texture.vert', 'vertex');
 	displayVelocityShader.loadShader('shaders/displayVelocity.frag', 'fragment');
-	displayVelocityShader.setUniform('screenWidth', 'f', window.innerWidth);
-	displayVelocityShader.setUniform('screenHeight', 'f', window.innerHeight);
 	displayVelocityShader.setUniform('texture', 't', velocityTexture);
 	
 	motionBlurTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -309,15 +320,15 @@ function initDisplayManager() {
 	displayManager = new DisplayManager(sceneScreen);
 	//displayManager.addGrid('shadows', customDisplays['shadows'].names);
 	//displayManager.addGrid('ssdo', customDisplays['ssdo'].names);
-	displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepth.frag', 'depth');
+	displayManager.addCustomTextureShader(displayDepthShader, normalsAndDepthTexture, 'depth');
 	displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayNormals.frag', 'normals');
-	displayManager.addCustomTexture(normalsAndDepthTexture, 'shaders/displayDepthNormals.frag', 'depthAndNormals');
+	displayManager.addCustomTextureShader(displayDepthNormalsShader, normalsAndDepthTexture, 'depthAndNormals');
 	displayManager.addSimpleTexture(rtTextures['phong'], 'phong');
 	displayManager.addSimpleTexture(rtTextures['expressive'], 'expressive');
 	displayManager.addSimpleTexture(rtTextures['diffuse'], 'diffuse');
 	displayManager.addSimpleTexture(diffuseTexture, 'diffuseMap');
-	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
-	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
+	displayManager.addCustomTextureShader(displayShadowMapShader, shadowMaps[0], 'shadowMap1');
+	displayManager.addCustomTextureShader(displayShadowMapShader, shadowMaps[1], 'shadowMap2');
 	displayManager.addSimpleTexture(shadowsTexture, 'shadows');
 	displayManager.addSimpleTexture(dofAuxTexture, 'dofBlurAux');
 	displayManager.addSimpleTexture(DOFBlurTexture, 'dofBlur');
@@ -328,7 +339,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(ssdoFinalBuffer, 'ssdoFinal');
 	displayManager.addSimpleTexture(ssdoBlurBuffer, 'ssdoBlur');
 	displayManager.addDisplay(randomShader, 'random');
-	displayManager.addCustomTexture(secondDepthTexture, 'shaders/displaySecondDepth.frag', 'secondDepth');
+	displayManager.addCustomTextureShader(displayDepthShader, secondDepthTexture, 'secondDepth');
 	displayManager.addDisplay(displayVelocityShader, 'velocity');
 	displayManager.addSimpleTexture(motionBlurTexture, 'motionBlur');
 	displayManager.display(customDisplays[MODE]);

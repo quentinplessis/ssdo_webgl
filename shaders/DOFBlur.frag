@@ -6,8 +6,8 @@ uniform sampler2D colorTexture;
 uniform sampler2D normalsAndDepthBuffer;
 varying vec2 vUv;
 
-uniform vec2 texelSize;
-uniform int orientation;    // 0 = horizontal, 1 = vertical
+uniform vec2 texelDirection;
+
 uniform float blurCoefficient;
 uniform float focusDistance; 
 uniform float near;
@@ -38,13 +38,7 @@ void main() {
 
 	// Apply the blur
 	float count = 0.0;
-	vec4 colour = vec4(0.0);
-	vec2 texelOffset;
-	if (orientation == 0)
-		texelOffset = vec2(texelSize.x, 0.0);
-	else
-		texelOffset = vec2(0.0, texelSize.y);
-
+	vec4 color = vec4(0.0);
 	if (blurAmount >= 1.0) {
 		float halfBlur = blurAmount * 0.5;
 		for (float i = 0.0 ; i < MAX_BLUR_RADIUS ; i++) {
@@ -52,16 +46,13 @@ void main() {
 				break;
 
 			float offset = i - halfBlur;
-			vec2 vOffset = vUv + (texelOffset * offset);
+			vec2 vOffset = vUv + (texelDirection * offset);
 
-			colour += texture2D(colorTexture, vOffset);
+			color += texture2D(colorTexture, vOffset);
 			++count;
 		}
 	}
 
 	// Apply colour
-	if (count > 0.0)
-		gl_FragColor = colour / count;
-	else
-		gl_FragColor = texture2D(colorTexture, vUv);
+	gl_FragColor = count > 0.0 ? color / count : texture2D(colorTexture, vUv);
 }
