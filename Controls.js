@@ -42,29 +42,32 @@ function initControls(json) {
 	gui.remember(text);
 	
 	var displaysFolder = gui.addFolder('Views');
-	displaysFolder.add(text, 'scene', {'Scene1': 'scene1', 'Sponza': 'sponza', 'Scene3': 'scene3'}).name('Scene').onChange(function(value) {
+	displaysFolder.add(text, 'scene', {'Scene1': 'scene1', 'Sponza': 'sponza', 'Cornel': 'cornel', 'Scene3': 'scene3'}).name('Scene').onChange(function(value) {
 		scene = new THREE.Scene();
+		sceneScreen = new THREE.Scene();
 		objects = [];
 		materials = []; lights = []; lightsPos = []; lightsColor = [];
 		lightsIntensity = []; lightsCameras = []; lightsView = []; lightsProj = [];
 		lightsAngle = []; lightsAttenuation = []; shadowMaps = [];
+		var shaders = [], rtTextures = [];
 		currentScene = value;
 		initLights();
 		initShaders();
 		scenes[currentScene].loadWorld();
+		scenes[currentScene].setCamera();
 		initDisplayManager();
 		render();
 	});
-	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSDO': 'ssdo', 'Depth of Field': 'dof'}).name('Grid').onChange(function(value) {
+	displaysFolder.add(text, 'gridDisplayed', {'Overview': 'all', 'Normal': 'normal', 'Shadows': 'shadows', 'SSAO': 'ssao', 'SSDO': 'ssdo', 'Depth of Field': 'dof', 'Motion blur': 'motionBlur'}).name('Grid').onChange(function(value) {
 		MODE = value;
 		displayManager.display(customDisplays[MODE]);
 		render();
 	});
-	displaysFolder.add(text, 'viewDisplayed', {'Texture': 'diffuseMap', 'Phong': 'phong', 'Hard shadows': 'hardShadows', 'Random': 'random'}).name('View').onChange(function(value) {
+	/*displaysFolder.add(text, 'viewDisplayed', {'Texture': 'diffuseMap', 'Phong': 'phong', 'Shadows': 'shadows', 'Random': 'random'}).name('View').onChange(function(value) {
 		MODE = 'all';
 		displayManager.display({names: [text.viewDisplayed]});
 		render();
-	});
+	});*/
 	displaysFolder.add(text, 'nextView').name('Next view');
 	displaysFolder.add(text, 'previousView').name('Previous view');
 	//displaysFolder.open();
@@ -72,7 +75,7 @@ function initControls(json) {
 	var lightsFolder = gui.addFolder('Lights');
 	lightsFolder.add(text, 'skyLightIntensity', 0, 1).step(0.05).name('Sky light').onChange(function(value) {
 		skyLightIntensity = value;
-		hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
+		shadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
 		render();
 	});
 	lightsFolder.add(text, 'allLights').name('All');
@@ -162,7 +165,7 @@ function initControls(json) {
 			shadowMode = 1; // VSM
 		else
 			shadowMode = 0; // hardshadows
-		hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
+		shadowsShader.setUniform('shadowMode', 'i', shadowMode);
 		render();
 	});
 	shadowsFolder.add(text, 'shadowBlur').name("Blur").onChange(function(value) {

@@ -91,7 +91,6 @@ float VSM(sampler2D depths, vec2 uv, float compare){
 		return clamp(max(p, p_max), 0.0, 1.0);
 	}
 	return step(compare, linearizedDepth + 0.001);
-	//return p;
 }
 
 void main() {

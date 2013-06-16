@@ -50,7 +50,7 @@ var Light = Class.create({
 	getLookAt: function() {
 		return this.lookAt;
 	},
-	generateViewMatrix: function() {
+	/*generateViewMatrix: function() {
 		this.viewMatrix = new THREE.Matrix4();
 		this.viewMatrix.lookAt(this.position, this.lookAt, this.up);
 		return this.viewMatrix;
@@ -69,5 +69,5 @@ var Light = Class.create({
 		if (this.projectionMatrix == null)
 			return this.generateProjectionMatrix();
 		return this.projectionMatrix;
-	}
+	}*/
 });

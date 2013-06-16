@@ -13,6 +13,13 @@ scenes["scene3"].loadLights = function() {
 	);
 }
 
+scenes["scene3"].setCamera = function() {
+	camera.position.x = -500;
+	camera.position.y = 800;
+	camera.position.z = 0;
+	controls.target = new THREE.Vector3(0.0, 0.0, 0.0);
+}
+
 scenes["scene3"].loadWorld = function() {
 	/*loadOFF('models/ram.off');
 	objects[0].position.x = 0;

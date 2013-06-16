@@ -13,6 +13,13 @@ scenes["scene1"].loadLights = function() {
 	);
 }
 
+scenes["scene1"].setCamera = function() {
+	camera.position.x = 0;
+	camera.position.y = 200;
+	camera.position.z = 300;
+	controls.target = new THREE.Vector3(0.0, 0.0, 0.0);
+}
+
 scenes["scene1"].loadWorld = function() {
 	// sphere
 	var sphereMaterial = new THREE.MeshLambertMaterial({color: 0xCC0000});
@@ -76,42 +83,4 @@ scenes["scene1"].loadWorld = function() {
 	//materials[3]['matEmissiveColor'] = new THREE.Vector4(0.0, 1.0, 0, 1.0);
 	//materials[3]['matEmissive'] = 0.8;
 	scene.add(objects[4]);
-
-	var loader = new THREE.OBJMTLLoader();
-	loader.addEventListener('load', function (event) {
-		objects[5] = event.content;
-		objects[5].traverse(function (child) {
-			if (child instanceof THREE.Mesh) {
-				child.saveMaterial = child.material;
-			}
-		});
-		objects[5].setMaterial = function(material) {
-			this.traverse(function (child) {
-				if (child instanceof THREE.Mesh) {
-					child.setMaterial(material);
-				}
-			});
-		};
-		objects[5].setComposedMaterial = function(shader) {
-			this.traverse(function (child) {
-				if (child instanceof THREE.Mesh) {
-					if (child.material != null) {
-						shader.setUniform('isTextured', 'i', 1);
-						shader.setUniform('texture', 't', child.saveMaterial.map);
-						child.setMaterial(shader.createMaterial());
-					}
-					else {
-						shader.setUniform('isTextured', 'i', 0);
-						shader.setUniform('texture', 't', null);
-					}
-				}
-			});
-		}
-		materials[5] = jQuery.extend(true, {}, blankMaterial);
-		//materials[5]['matDiffuseColor'] = new THREE.Vector4(0.0, 0.0, 1.0, 1.0);
-		objects[5].position.y = -70;
-		objects[5].position.x = 70;
-		scene.add(objects[5]);
-	});
-	//loader.load('models/obj/female02/female02.obj', 'models/obj/female02/female02.mtl');
 }

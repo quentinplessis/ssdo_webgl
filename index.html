@@ -18,6 +18,7 @@
 		<script src="lib/OBJMTLLoader.js"></script>
 		<script src="Random.js"></script>
 		<script src="OFF.js"></script>
+		<script src="OBJ.js"></script>
 		<script src="Shader.js"></script>
 		<script src="PhongShader.js"></script>
 		<script src="ExpressiveShader.js"></script>
@@ -30,130 +31,12 @@
 	<body>
 		<div id="container"></div>
 	</body>
-	<script>
-		if (!Detector.webgl) Detector.addGetWebGLMessage();
-		
-		// Screen
-		var screenWidth = window.innerWidth, screenHeight = window.innerHeight;
-		// Camera
-		var	viewAngle = 45,
-			aspect = screenWidth / screenHeight,
-			near = 0.1,
-			far = 10000;
-			
-		var lightDefaultAngle = 60.0, skyLightIntensity = 0.1, 
-			lightDefaultAttenuation = 0.4, lightDefaultIntensity = 1.0;
-		var lightViewAngle = 70.0, lightRatio = 1.0, lightNear = 0.1, lightFar = 1000.0;
-		var cameraSpeed = 10.0;
-		var clock = new THREE.Clock();
-		
-		var $container, stats;
-		var camera, cameraRTT, controls, scene, sceneScreen, renderer, displayManager;
-		var lights = [], lightsPos = [], lightsColor = [], lightsIntensity = [];
-		var lightsAngle = [], lightsAttenuation = [];
-		var lightsCameras = [], lightsView = [], lightsProj = [];
-		var objects = [], materials = [];
-		var blankMaterial = []; blankMaterial['matDiffuse'] = 0.8; blankMaterial['matSpecular'] = 0.3;
-		blankMaterial['matEmissive'] = 0.0; blankMaterial['shininess'] = 5.0;
-		blankMaterial['matDiffuseColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
-		blankMaterial['matSpecularColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
-		blankMaterial['matEmissiveColor'] = new THREE.Vector4(1.0, 1.0, 1.0, 1.0);
-		blankMaterial['texture'] = null;
-		
-		var shaders = [], rtTextures = [];
-		var normalsAndDepthShader, normalsAndDepthTexture;
-		var diffuseMapShader, diffuseTexture;
-		var materialShader, materialTexture;
-		var coordsShader, coordsTexture;
-		var texturedPhong, texturedPhongTexture;
-
-		var secondDepthShader, secondDepthTexture;		
-		var shadowMaps = [], shadowMapsResolution = 64, shadowMapsFullResolution = 256;
-		var shadowMapAux, shadowMapAux2, shadowMapBlurShader, blurShadowMaps = false;
-		var smScene, shadowMapsBlurSize = 4.0;
-
-		var hardShadowsShader, hardShadowsTexture;
-		var shadowMapsDownSampled = [];
-		
-		var dofScene, dofQuad;
-		var DOFBlurTexture, DOFBlurShader;
-		var DOFImageTexture, DOFImageShader;
-		var dofAuxTexture, dofResolution = 256;
-		
-		var worldToMillimeter = 10;
-		var camMill = 35;
-		//var focal = 50;
-		var focal = 180 * camMill / (Math.PI * viewAngle);
-		focal = 80;
-		var focusDistance = 380, blurCoeff;
-		//var ppm = 36.57;
-		var ppm = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight) / camMill;
-		//var fStop = 2.8,
-		var fStop = ppm;
-		fStop = 20;
-		
-		var velocityTexture, velocityShader, motionBlurTexture, motionBlurShader;
-		var previousCameraViewMatrix;
-		var mbIntensity = 1.0, mbSamples = 4.0;
-		
-		var ssaoScene, ssaoQuad;
-		var ssaoOnlyShader, ssaoOnlyBuffer;
-		var ssaoDiffuseShader, ssaoDiffuseBuffer;
-
-		var ssdoScene, ssdoQuad;
-		var ssdoDirectLightingShader, directLightBuffer;
-		var ssdoIndirectBounceShader, ssdoFinalBuffer;
-		var ssdoBlurShader, ssdoBlurBuffer;
-		
-		var scenes = [];
-		var currentScene = "scene1";
-		
-				
-		var customDisplays = [];
-		customDisplays['normal'] = {cols: 2	, rows: 3, 
-			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'phong']};
-		customDisplays['all'] = {cols: 4, rows: 4, all: true};
-		customDisplays['shadows'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
-		customDisplays['ssdo'] = {cols: 2, rows: 2, 
-			names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
-
-		customDisplays['ssao'] = {cols: 2, rows: 2, 
-			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
-		//	names: ['ssaoOnly']};
-		
-		customDisplays['dof'] = {cols: 2, rows: 2, 
-			names: ['dofBlurAux', 'dofBlur', 'dofImage', 'hardShadows']};
-			
-		customDisplays['texture'] = {names: ['diffuseMap']};
-		customDisplays['random'] = {names: ['random']};
-		
-		customDisplays['motionBlur'] = {cols: 2, rows: 1, 
-			names: ['velocity', 'motionBlur']};
-		
-		var MODE = 'motionBlur', ANIMATION = false;
-		var shadowMode = 0; // hardShadows
-		
-		var randomTexture;
-		
-		//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
-			//magFilter: THREE.LinearFilter,  // we want nice filtering
-			//wrapS:THREE.RepeatWrapping,
-			//wrapT:THREE.RepeatWrapping,
-		var options = {
-				minFilter: THREE.LinearFilter,
-				//magFilter: THREE.NearestFilter,
-				format: THREE.RGBAFormat,
-				type: THREE.FloatType
-			};
-		var blankTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-		var testTexture = THREE.ImageUtils.loadTexture('textures/avatar.jpg');
-		var fizzyText; // controls
-	</script>
+	<script src="Params.js"></script>
 	<script src="Controls.js"></script>
 	<script src="scenes/Scene1.js"></script>
 	<script src="scenes/SceneSponza.js"></script>
 	<script src="scenes/Scene3.js"></script>
+	<script src="scenes/SceneCornel.js"></script>
 	<script src="Initialization.js"></script>
 	<script>
 		init();
@@ -163,12 +46,13 @@
 		animate();
 		
 		function refactorShadowMaps() {
-			for (var i = 0 ; i < lights.length ; i++)
-				shadowMaps[i] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
+			var lLength = lights.length;
+			while (lLength--)
+				shadowMaps[lLength] = new THREE.WebGLRenderTarget(shadowMapsResolution, shadowMapsResolution, options);
 			shadowMapAux = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
 			shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
-			hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
-			hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+			shadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
+			shadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			ssdoDirectLightingShader.setUniform('shadowMap', 't', shadowMaps[0]);
 			ssdoDirectLightingShader.setUniform('shadowMap1', 't', shadowMaps[1]);
 			ssdoIndirectBounceShader.setUniform('shadowMap', 't', shadowMaps[0]);
@@ -244,43 +128,37 @@
 		var outof = 0;
 	
 		function render() {
+			// 1st rendering : computes depth and normals
 			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
-				// 1st rendering : computes depth and normals
-				for (var i = 0 ; i < objects.length ; i++)
+				var i = objects.length;
+				while (i--)
 					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
 				renderer.render(scene, camera, normalsAndDepthTexture, true);	
 			}
 			
+			// 2nd rendering : diffuse map rendering
 			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture' || MODE == 'dof' || MODE == 'motionBlur') {
-				// 2nd rendering : diffuse map rendering
-				for (var i = 0 ; i < objects.length ; i++) {
-					diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-					diffuseMapShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-					if (objects[i].composedObject) {
+				var i = objects.length;
+				while (i--) {
+					if (objects[i].composedObject)
 						objects[i].setShaderMaterial(diffuseMapShader);
-					}
 					else {
-						if (materials[i]['texture'] != null) {
-							diffuseMapShader.setUniform('isTextured', 'i', 1);
-							diffuseMapShader.setUniform('diffMap', 't', materials[i]['texture']);
-						}
-						else {
-							diffuseMapShader.setUniform('isTextured', 'i', 0);
-							diffuseMapShader.setUniform('diffMap', 't', null);
-						}
+						diffuseMapShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+						diffuseMapShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+						diffuseMapShader.setUniform('isTextured', 'i', materials[i]['texture'] != null ? 1 : 0);
+						diffuseMapShader.setUniform('diffMap', 't', materials[i]['texture']);
 						objects[i].setMaterial(diffuseMapShader.createMaterial());
 					}
 				}
 				renderer.render(scene, camera, diffuseTexture, true);
 			}
 			
+			// 3rd rendering : diffuse rendering with lights
 			if (MODE == 'all' || MODE == 'normal') {
-				// 3rd rendering : diffuse rendering with lights
-				for (var i = 0 ; i < objects.length ; i++) {
-					if (objects[i].composedObject) {
-						shaders['diffuse'].use(materials[i]['matDiffuse'], materials[i]['matDiffuseColor'], materials[i]['texture']);
+				var i = objects.length;
+				while (i--) {
+					if (objects[i].composedObject)
 						objects[i].setShaderMaterial(shaders['diffuse']);
-					}
 					else {
 						shaders['diffuse'].use(materials[i]['matDiffuse'], materials[i]['matDiffuseColor'], materials[i]['texture']);
 						objects[i].setMaterial(shaders['diffuse'].createMaterial());
@@ -289,9 +167,10 @@
 				renderer.render(scene, camera, rtTextures['diffuse'], true);
 			}
 			
+			// 4th rendering : phong rendering
 			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows') {
-				// 4th rendering : phong rendering
-				for (var i = 0 ; i < objects.length ; i++) {
+				var i = objects.length;
+				while (i--) {
 					if (objects[i].composedObject) {
 						shaders['phong'].use(materials[i]['matDiffuse'], materials[i]['matSpecular'], materials[i]['shininess'], materials[i]['matDiffuseColor'], materials[i]['matSpecularColor'], materials[i]['matEmissive'], materials[i]['matEmissiveColor'], materials[i]['texture']);
 						objects[i].setShaderMaterial(shaders['phong']);
@@ -304,9 +183,10 @@
 				renderer.render(scene, camera, rtTextures['phong'], true);
 			}
 			
+			// 5th rendering : cartoon rendering
 			if (MODE == 'all') { // || MODE == 'normal') {
-				// 5th rendering : expressive rendering
-				for (var i = 0 ; i < objects.length ; i++) {
+				var i = objects.length;
+				while (i--) {
 					if (objects[i].composedObject) {
 						shaders['expressive'].use(materials[i]['matDiffuse'], materials[i]['shininess'], materials[i]['matDiffuseColor']);
 						objects[i].setShaderMaterial(shaders['expressive']);
@@ -319,105 +199,107 @@
 				renderer.render(scene, camera, rtTextures['expressive'], true);
 			}
 			
+			// 6th rendering : computes 3D coords
 			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
-				// 6th rendering : computes 3D coords
-				for (var i = 0 ; i < objects.length ; i++)
+				var i = objects.length;
+				while (i--)
 					objects[i].setMaterial(coordsShader.getMaterial());
 				renderer.render(scene, camera, coordsTexture, true);
-
-				//Second Depth Pass	
-				var mat = secondDepthShader.getMaterial();
-				mat.side = THREE.DoubleSide;
-				for (var i = 0 ; i < objects.length ; i++)
-				{
-					objects[i].setMaterial(mat);
-				}
-				renderer.render(scene, camera, secondDepthTexture, true);
-
 			}
 			
+			// 7th rendering : compute second depth
 			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
-				//7th rendering : compute second depth	
-				for (var i = 0 ; i < objects.length ; i++)
-					objects[i].setMaterial(secondDepthShader.getMaterial());
+				var mat = secondDepthShader.getMaterial();
+				mat.side = THREE.DoubleSide;
+				var i = objects.length;
+				while (i--)
+					objects[i].setMaterial(mat);
 				renderer.render(scene, camera, secondDepthTexture, true);
-
 			}
 
+			// Shadow maps
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
-				// shadow maps
-				for (var i = 0 ; i < objects.length ; i++)
-					objects[i].setMaterial(shadowMapsShader.getMaterial());
+				var i = objects.length;
+				while (i--)
+					objects[i].setMaterial(shadowMapsShader.createMaterial());
 				if (shadowMode == 1 && blurShadowMaps) {
-					for (var i = 0 ; i < lights.length ; i++) {
+					var i = lights.length;
+					while (i--) {
 						renderer.render(scene, lightsCameras[i], shadowMapAux, true);
 						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux);
-						shadowMapBlurShader.setUniform('orientation', 'i', 0);
+						shadowMapBlurShader.setUniform('texelDirection', 'v2', horizontalTexel);
 						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
 						renderer.render(smScene, cameraRTT, shadowMapAux2, true);
+						
 						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux2);
-						shadowMapBlurShader.setUniform('orientation', 'i', 1);
+						shadowMapBlurShader.setUniform('texelDirection', 'v2', verticalTexel);
 						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
 						renderer.render(smScene, cameraRTT, shadowMaps[i], true);
 					}
 				}
 				else {
-					renderer.render(scene, lightsCameras[0], shadowMaps[0], true);
-					renderer.render(scene, lightsCameras[1], shadowMaps[1], true);
+					var i = lights.length;
+					while (i--)
+						renderer.render(scene, lightsCameras[i], shadowMaps[i], true);
 				}
 			}
 			
+			// Shadows
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') { // || MODE == 'ssdo') {
-				for (var i = 0 ; i < objects.length ; i++) {
+				var i = objects.length;
+				while (i--) {
 					if (objects[i].composedObject) {
-						//hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-						hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
-						hardShadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
-						//hardShadowsShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-						hardShadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
-						objects[i].setShaderMaterial(hardShadowsShader);
+						shadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+						shadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
+						shadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+						objects[i].setShaderMaterial(shadowsShader);
 					}
 					else {
-						//hardShadowsShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
-						hardShadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
-						hardShadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
-						//hardShadowsShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
-						hardShadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
-						objects[i].setMaterial(hardShadowsShader.createMaterial());
+						shadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+						shadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
+						shadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+						objects[i].setMaterial(shadowsShader.createMaterial());
 					}
 				}
-				renderer.render(scene, camera, hardShadowsTexture, true);
+				renderer.render(scene, camera, shadowsTexture, true);
 			}
 			
+			// Motion blur
 			if (MODE == 'all' || MODE == 'motionBlur') {
 				velocityShader.setUniform('previousViewMatrix', 'm4', previousCameraViewMatrix);
-				var oLength = objects.length;
-				while (oLength--) {
-					velocityShader.setUniform('previousModelMatrix', 'm4', objects[oLength].previousModelMatrix);
-					objects[oLength].setMaterial(velocityShader.createMaterial());
+				var i = objects.length;
+				while (i--) {
+					if (i.composedObject)
+						objects[i].setShaderMaterial(velocityShader);
+					else {
+						velocityShader.setUniform('previousModelMatrix', 'm4', objects[i].previousModelMatrix);
+						objects[i].setMaterial(velocityShader.createMaterial());
+					}
 				}
 				renderer.render(scene, camera, velocityTexture, true);
 				screenSpaceQuad.setMaterial(motionBlurShader.createMaterial());
 				renderer.render(screenSpaceScene, cameraRTT, motionBlurTexture, true);
 				
 				if (outof >= 0) {
-					oLength = objects.length;
-					while (oLength--)
-						objects[oLength].previousModelMatrix.copy(objects[oLength].matrixWorld);
-					
+					var i = objects.length;
+					while (i--) {
+						if (i.composedObject)
+							objects[i].updateModelMatrix();
+						else
+							objects[i].previousModelMatrix.copy(objects[i].matrixWorld);
+					}
 					//console.log(JSON.stringify(previousCameraViewMatrix) + " \n  " + JSON.stringify(camera.matrixWorldInverse) + "\n\n");
 					previousCameraViewMatrix.copy(camera.matrixWorldInverse);
-					
 					outof = 0;
-					
 				}
 				outof++;
 			}
 			
+			// Depth of field
 			if (MODE == 'all' || MODE == 'dof') {
 				// blur
 				DOFBlurShader.setUniform('orientation', 'i', 0);
-				DOFBlurShader.setUniform('colorTexture', 't', hardShadowsTexture);
+				DOFBlurShader.setUniform('colorTexture', 't', shadowsTexture);
 				dofQuad.setMaterial(DOFBlurShader.createMaterial());
 				renderer.render(dofScene, cameraRTT, dofAuxTexture, true);
 			
@@ -427,7 +309,7 @@
 				renderer.render(dofScene, cameraRTT, DOFBlurTexture, true);
 			
 				// composited image
-				DOFImageShader.setUniform('colorTexture', 't', hardShadowsTexture);
+				DOFImageShader.setUniform('colorTexture', 't', shadowsTexture);
 				dofQuad.setMaterial(DOFImageShader.createMaterial());
 				renderer.render(dofScene, cameraRTT, DOFImageTexture, true);
 			}
@@ -445,7 +327,6 @@
 
 			// SSDO
 			if (MODE == 'all' || MODE == 'ssdo') {
-			
 				// ssdo 1st pass
 				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
@@ -489,7 +370,6 @@
 					objects[0].position.x += direction * 10.0;
 					//objects[2].rotation.y += direction * 5 / 100;
 					lastTime = currentTime;
-					//scene.updateMatrixWorld();
 					render();
 				}
 			}

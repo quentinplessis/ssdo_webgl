@@ -6,7 +6,7 @@ function processLights() {
 		lightsColor[i] = lights[i].getColor();
 		lightsIntensity[i] = lights[i].getIntensity();
 
-		lightsCameras[i] = new THREE.PerspectiveCamera(lightViewAngle, lightRatio, lightNear, lightFar);
+		lightsCameras[i] = new THREE.PerspectiveCamera(lightViewAngle, lightRatio, lightNearFar.x, lightNearFar.y);
 		//lightsCameras[i] = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000 );
 		lightsCameras[i].position = lightsPos[i];
 		lightsCameras[i].lookAt(lights[i].getLookAt()); 
@@ -37,9 +37,6 @@ function initShaders() {
 	
 	shaders['diffuse'] = new DiffuseShader(lightsPos, lightsColor, lightsIntensity);
 	rtTextures['diffuse'] = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-	
-	var texelSize = new THREE.Vector2(1.0 / window.innerWidth, 1.0 / window.innerHeight);
-	var lightNearFar = new THREE.Vector2(lightNear, lightFar);
 	
 	normalsAndDepthShader = new Shader();
 	normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
@@ -81,29 +78,28 @@ function initShaders() {
 	shadowMapBlurShader.setUniform('blurSize', 'f', test);
 	
 	// hard shadows
-	hardShadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
-	hardShadowsShader = new Shader();
-	hardShadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
-	hardShadowsShader.loadShader('shaders/hardShadows.frag', 'fragment');
-	hardShadowsShader.setUniform('diffuseTexture', 't', diffuseTexture);
-	hardShadowsShader.setUniform('shadowMaps', 'vt', shadowMaps);
-	hardShadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
-	hardShadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
-	hardShadowsShader.setUniform('lightsView', 'm4v', lightsView);
-	hardShadowsShader.setUniform('lightsProj', 'm4v', lightsProj);
-	hardShadowsShader.setUniform('lightsPos', 'v3v', lightsPos);
-	hardShadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
-	hardShadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
-	hardShadowsShader.setUniform('lightsAngle', 'fv1', lightsAngle);
-	hardShadowsShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
-	hardShadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
-	hardShadowsShader.setUniform('lightNearFar', 'v2', lightNearFar);
-	hardShadowsShader.setUniform('PI', 'f', Math.PI);
-	hardShadowsShader.setUniform('shadowMode', 'i', shadowMode);
-	hardShadowsShader.setUniform('texelSize', 'v2', texelSize);
+	shadowsTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	shadowsShader = new Shader();
+	shadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
+	shadowsShader.loadShader('shaders/shadows.frag', 'fragment');
+	shadowsShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	shadowsShader.setUniform('shadowMaps', 'vt', shadowMaps);
+	shadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
+	shadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+	shadowsShader.setUniform('lightsView', 'm4v', lightsView);
+	shadowsShader.setUniform('lightsProj', 'm4v', lightsProj);
+	shadowsShader.setUniform('lightsPos', 'v3v', lightsPos);
+	shadowsShader.setUniform('lightsColor', 'v4v', lightsColor);
+	shadowsShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+	shadowsShader.setUniform('lightsAngle', 'fv1', lightsAngle);
+	shadowsShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
+	shadowsShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
+	shadowsShader.setUniform('lightNearFar', 'v2', lightNearFar);
+	shadowsShader.setUniform('PI', 'f', Math.PI);
+	shadowsShader.setUniform('shadowMode', 'i', shadowMode);
+	shadowsShader.setUniform('texelSize', 'v2', texelSize);
 	
 	// depth-of-field
-	blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
 	DOFBlurTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
 	dofAuxTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
 	DOFBlurShader = new Shader();
@@ -149,7 +145,7 @@ function initShaders() {
 	motionBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	motionBlurShader.loadShader('shaders/MotionBlur.frag', 'fragment');
 	motionBlurShader.setUniform('velocityTexture', 't', velocityTexture);
-	motionBlurShader.setUniform('colorTexture', 't', hardShadowsTexture);
+	motionBlurShader.setUniform('colorTexture', 't', shadowsTexture);
 	motionBlurShader.setUniform('samplesNumber', 'f', mbSamples);
 	
 	var samplesNumber = 8;
@@ -255,10 +251,12 @@ function initShaders() {
 }
 
 function processObjects() {
-	var oLength = objects.length;
-	while (oLength--) {
-		objects[oLength].previousModelMatrix = new THREE.Matrix4();
-		objects[oLength].previousModelMatrix.copy(objects[oLength].matrixWorld);
+	var i = objects.length;
+	while (i--) {
+		if (!objects[i].composedObject) {
+			objects[i].previousModelMatrix = new THREE.Matrix4();
+			objects[i].previousModelMatrix.copy(objects[i].matrixWorld);
+		}
 	}
 }
 
@@ -320,7 +318,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(diffuseTexture, 'diffuseMap');
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
-	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
+	displayManager.addSimpleTexture(shadowsTexture, 'shadows');
 	displayManager.addSimpleTexture(dofAuxTexture, 'dofBlurAux');
 	displayManager.addSimpleTexture(DOFBlurTexture, 'dofBlur');
 	displayManager.addSimpleTexture(DOFImageTexture, 'dofImage');
@@ -364,13 +362,8 @@ function initCameraControls(cam) {
 // Initialization
 function init() {
 	camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
-	camera.position.y = 200;
-	camera.position.z = 300;
 	previousCameraViewMatrix = new THREE.Matrix4();
 	previousCameraViewMatrix.copy(camera.matrixWorldInverse);
-	/*camera.position.x = -500;
-	camera.position.y = 800;
-	camera.position.z = 0;*/
 	
 	cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 	cameraRTT.position.z = 100;
@@ -389,6 +382,7 @@ function init() {
 	
 	// controls
 	initCameraControls(camera);
+	scenes[currentScene].setCamera();
 
 	// stats
 	stats = new Stats();
