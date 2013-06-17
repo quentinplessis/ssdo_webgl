@@ -73,7 +73,7 @@ if (!Detector.webgl) Detector.addGetWebGLMessage();
 
 // Scenes
 	var scenes = [];
-	var currentScene = "scene1";
+	var currentScene = "squirrel";
 
 // Displays
 	var customDisplays = [];

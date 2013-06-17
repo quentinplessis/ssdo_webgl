@@ -37,6 +37,7 @@
 	<script src="scenes/SceneSponza.js"></script>
 	<script src="scenes/Scene3.js"></script>
 	<script src="scenes/SceneCornel.js"></script>
+	<script src="scenes/SceneSquirrel.js"></script>
 	<script src="Initialization.js"></script>
 	<script>
 		init();
@@ -360,17 +361,33 @@
 		var currentTime = lastTime;
 		var interval = 20;
 		
+		var lastChoiceTime = currentTime;
+		var randomObj = 1;
+		
 		function animate() {
 			requestAnimationFrame(animate);
 			currentTime = (new Date()).getTime();
 			if (ANIMATION) {
 				if (currentTime - lastTime >= interval) {
-					if (objects[0].position.x >= 100)
+					/*if (objects[0].position.x >= 100)
 						direction = -1;
 					if (objects[0].position.x <= -100)
 						direction = 1;
-					objects[0].position.x += direction * 10.0;
+					objects[0].position.x += direction * 10.0;*/
 					//objects[2].rotation.y += direction * 5 / 100;
+					
+					if (currentTime - lastChoiceTime >= 1000) {
+						objects[randomObj].position.y = 0;
+						randomObj = Math.round(1.0 + Math.random() * 20.0);
+						lastChoiceTime = currentTime;
+						//alert(randomObj);
+					}
+					if (objects[randomObj].position.y >= 50)
+						direction = -1;
+					if (objects[randomObj].position.y <= 0)
+						direction = 1;
+					objects[randomObj].position.y += direction * 10.0
+					
 					lastTime = currentTime;
 					render();
 				}
