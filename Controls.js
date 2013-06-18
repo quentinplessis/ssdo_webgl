@@ -27,6 +27,9 @@ var FizzyText = function() {
 	this.focusDistance = focusDistance;
 	this.focal = focal;
 	this.fStop = fStop;
+	//SSDO
+	this.rmax = rmax;
+	this.numberOfSamplesF = numberOfSamplesF;
 };
 
 function initControls(json) {
@@ -208,4 +211,23 @@ function initControls(json) {
 		render();
 	});
 	dofFolder.open();
+
+	var ssdoFolder = gui.addFolder("SSDO");
+	ssdoFolder.add(text, 'rmax', 0, 512).name("Rmax").onChange(function(value) {
+		rmax = value;
+		ssdoDirectLightingShader.setUniform('rmax', 'f', rmax);	
+		ssdoIndirectBounceShader.setUniform('rmax', 'f', rmax);
+		render();
+	});
+	ssdoFolder.add(text, 'numberOfSamplesF', 0, 32).name("Samples").onChange(function(value) {
+		numberOfSamplesF = value;
+		numberOfSamples = Math.round(value);
+		ssdoDirectLightingShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
+		ssdoDirectLightingShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
+		ssdoIndirectBounceShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
+		ssdoIndirectBounceShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
+		render();
+	});
+
+
 }

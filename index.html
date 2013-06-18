@@ -62,7 +62,7 @@
 		
 		var shaders = [], rtTextures = [];
 		var normalsAndDepthShader, normalsAndDepthTexture;
-		var diffuseMapShader, diffuseTexture;
+		var diffuseMapShader, diffuseTexture, diffuseTexture90;
 		var materialShader, materialTexture;
 		var coordsShader, coordsTexture;
 		var texturedPhong, texturedPhongTexture;
@@ -96,19 +96,24 @@
 		var ssaoOnlyShader, ssaoOnlyBuffer;
 		var ssaoDiffuseShader, ssaoDiffuseBuffer;
 
-		var ssdoScene, ssdoQuad;
-		var ssdoDirectLightingShader, directLightBuffer;
+		var ssdoScene, ssdoQuad;	
+		var ssdoDirectLightingShader, directLightBuffer, directLightBuffer90;
 		var ssdoIndirectBounceShader, ssdoIndirectBounceBuffer;
 		var ssdoBlurShader, ssdoBlurBuffer, ssdoBlurAuxBuffer;
 		var ssdoFinalShader, ssdoFinalBuffer;
-		
+		var camera90;
+		var patchSizeF = 25.0;
+		var sigma = 10000.0;
+		var rmax =100.0;
+		var numberOfSamplesF = 8.0;
+
 		var scenes = [];
 		var currentScene = "scene1";
 		
 				
 		var customDisplays = [];
 		customDisplays['normal'] = {cols: 2	, rows: 3, 
-			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'phong']};
+			names: ['depth', 'normals', 'depthAndNormals', 'diffuseMap', 'diffuse', 'diffuse90']};
 		customDisplays['all'] = {cols: 4, rows: 4, all: true};
 		customDisplays['shadows'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
@@ -124,7 +129,7 @@
 		customDisplays['texture'] = {names: ['diffuseMap']};
 		customDisplays['random'] = {names: ['random']};
 		
-		var MODE = 'ssdo', ANIMATION = false;
+		var MODE = 'normal', ANIMATION = false;
 		var shadowMode = 0; // hardShadows
 		
 		var randomDirectionsTexture, randomTexture;
@@ -259,6 +264,10 @@
 					}
 				}
 				renderer.render(scene, camera, diffuseTexture, true);
+			//	if(MODE == 'ssdo' ||  MODE =='all')
+			//	{
+				renderer.render(scene, camera90, diffuseTexture90, true);
+			//	}
 			}
 			
 			if (MODE == 'all' || MODE == 'normal') {
@@ -409,19 +418,22 @@
 			if (MODE == 'all' || MODE == 'ssdo') {
 			
 				// ssdo 1st pass
+				ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
 				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
+
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
+			
+				ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture90);
+				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
+
+				renderer.render(ssdoScene, cameraRTT, directLightBuffer90, true);
+
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);	
-
-				// ssdo final pass
-				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
-				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
-
 			
 				// ssdo blur pass
-				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoFinalBuffer);
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoIndirectBounceBuffer);
 				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurAuxBuffer, true);
@@ -431,6 +443,11 @@
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
 			
+				// ssdo final pass
+				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+
+
 			
 			}
 			// displays the scene
@@ -449,11 +466,11 @@
 					};
 		})();
 
-		var direction = 1;
+		var direction = 1
 		var lastTime = (new Date()).getTime();
 		var currentTime = lastTime;
-		var interval = 20;
-		
+		var interval = 20;		
+
 		function animate() {
 			requestAnimationFrame(animate);
 			currentTime = (new Date()).getTime();
@@ -469,6 +486,12 @@
 					render();
 				}
 			}
+
+			camera90.position.y = camera.position.y;	
+			camera90.position.z = camera.position.z;
+			camera90.lookAt(new THREE.Vector3(0.0,0.0,0.0));	
+		//	camera90.matrixWorldInverse = camera.matrixWorldInverse;			
+		//	camera90.matrixWorld = camera.matrixWorld;			
 			controls.update(clock.getDelta());
 			stats.update();
 		}

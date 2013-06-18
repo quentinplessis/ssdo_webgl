@@ -56,6 +56,7 @@ function initShaders() {
 	diffuseMapShader.loadShader('shaders/texturedWorldCoords.vert', 'vertex');
 	diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
 	diffuseTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	diffuseTexture90 = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 
 	//Second depth for depth peeling
 	secondDepthShader = new Shader();
@@ -129,7 +130,6 @@ function initShaders() {
 	DOFImageShader.setUniform('far', 'f', far);
 	DOFImageShader.setUniform('PPM', 'f', ppm);
 	
-	var numberOfSamplesF = 8.0;
 	randomDirectionsTexture = createRandTexture(10, Math.round(numberOfSamplesF), 4);
 	randomDirectionsShader = new Shader();
 	randomDirectionsShader.setUniform('screenWidth', 'f', window.innerWidth);
@@ -148,21 +148,27 @@ function initShaders() {
 
 	
 	// SSDO shaders
-	var patchSizeF = 25.0;
-	var rmax = 50.0;
+
 	var randomDirections = [];
-	
+	var gaussianCoeff = [];
 	for(var i = 0 ; i< Math.round(numberOfSamplesF) ; i++)
 	{
 		randomDirections[i] = new THREE.Vector3(2.0*Math.random()-1.0, 2.0*Math.random()-1.0 ,Math.random());
 	}
+				
+	
+	for(var i = 0 ; i< Math.round(patchSizeF) ; i++)
+	{
+		var offset = i - Math.round(patchSizeF/2);
+       		gaussianCoeff[i] = 1.0/(Math.sqrt(2.0*Math.PI)*sigma)*Math.exp(-(Math.pow(offset,2.0))/(2.0*Math.pow(sigma,2.0)));
+	}
 
 	directLightBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
+	directLightBuffer90 = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	ssdoDirectLightingShader = new Shader();
 	ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture);
 	ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	ssdoDirectLightingShader.setUniform('secondDepthBuffer', 't', secondDepthTexture);
-	ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
 	ssdoDirectLightingShader.setUniform('randomTexture', 't', randomTexture);
 	ssdoDirectLightingShader.setUniform('randomDirectionsTexture', 't', randomDirectionsTexture);
 	ssdoDirectLightingShader.loadShader('shaders/texture.vert', 'vertex');
@@ -180,7 +186,7 @@ function initShaders() {
 	ssdoDirectLightingShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
 	ssdoDirectLightingShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
 	ssdoDirectLightingShader.setUniform('randomDirections', 'v3v', randomDirections);
-	ssdoDirectLightingShader.setUniform('rmax', 'f', rmax);
+	ssdoDirectLightingShader.setUniform('rmax', 'f', 1.0);
 	
 	ssdoIndirectBounceBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	ssdoIndirectBounceShader = new Shader();
@@ -191,7 +197,8 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('randomTexture', 't', randomTexture);
 	ssdoIndirectBounceShader.setUniform('randomDirectionsTexture', 't', randomDirectionsTexture);	
 	ssdoIndirectBounceShader.setUniform('directLightBuffer', 't', directLightBuffer);
-	ssdoIndirectBounceShader.loadShader('shaders/ssdo.vert', 'vertex');
+	ssdoIndirectBounceShader.setUniform('directLightBuffer90', 't', directLightBuffer90);
+	ssdoIndirectBounceShader.loadShader('shaders/texture.vert', 'vertex');
 	ssdoIndirectBounceShader.loadShader('shaders/SSDOIndirectBounce.frag', 'fragment');
 	ssdoIndirectBounceShader.setUniform('screenWidth', 'f', window.innerWidth);
 	ssdoIndirectBounceShader.setUniform('screenHeight', 'f', window.innerHeight);
@@ -218,6 +225,7 @@ function initShaders() {
 	ssdoBlurShader.setUniform('patchSize', 'i',Math.round(patchSizeF));
 	ssdoBlurShader.setUniform('patchSizeF', 'f',patchSizeF);
 	ssdoBlurShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
+	ssdoBlurShader.setUniform('gaussianCoeff', 'fv1', gaussianCoeff);
 	ssdoBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	ssdoBlurShader.loadShader('shaders/ssdoBlur.frag', 'fragment');
 
@@ -225,7 +233,7 @@ function initShaders() {
 	ssdoFinalShader = new Shader();
 	ssdoFinalShader.setUniform('texelSize', 'v2', new THREE.Vector2(1.0/window.innerWidth,1.0/window.innerHeight));
 	ssdoFinalShader.setUniform('directLightBuffer', 't', directLightBuffer);
-	ssdoFinalShader.setUniform('indirectBounceBuffer', 't', ssdoIndirectBounceBuffer);
+	ssdoFinalShader.setUniform('indirectBounceBuffer', 't', ssdoBlurBuffer);
 	ssdoFinalShader.loadShader('shaders/texture.vert', 'vertex');
 	ssdoFinalShader.loadShader('shaders/ssdoFinal.frag', 'fragment'); 
 
@@ -330,6 +338,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(rtTextures['expressive'], 'expressive');
 	displayManager.addSimpleTexture(rtTextures['diffuse'], 'diffuse');
 	displayManager.addSimpleTexture(diffuseTexture, 'diffuseMap');
+	displayManager.addSimpleTexture(diffuseTexture90, 'diffuse90');
 	displayManager.addCustomTexture(shadowMaps[0], 'shaders/displayShadowMap.frag', 'shadowMap1');
 	displayManager.addCustomTexture(shadowMaps[1], 'shaders/displayShadowMap.frag', 'shadowMap2');
 	displayManager.addSimpleTexture(hardShadowsTexture, 'hardShadows');
@@ -381,6 +390,15 @@ function init() {
 	camera.position.y = 800;
 	camera.position.z = 0;*/
 	
+	//SSDO
+	camera90 = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
+	camera90.position.y = 200;
+	camera90.position.z = 300;
+
+	//Rotation de 90° camera
+//	var rotationMatrix90 = new THREE.Matrix4().makeRotationAxis(camera.up, -Math.PI/2);
+//	camera90.applyMatrix(rotationMatrix90);			
+
 	cameraRTT = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -10000, 10000);
 	cameraRTT.position.z = 100;
 	
