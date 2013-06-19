@@ -28,7 +28,7 @@ var FizzyText = function() {
 	this.focal = focal;
 	this.fStop = fStop;
 	//SSDO
-	this.rmax = rmax;
+	this.rmax = rmax2;
 	this.numberOfSamplesF = numberOfSamplesF;
 };
 
