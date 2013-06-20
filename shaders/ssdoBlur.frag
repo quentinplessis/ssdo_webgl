@@ -10,15 +10,16 @@ uniform sampler2D ssdoBuffer;
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
 
-//Coefficients
-uniform float gaussianCoeff[26];
 
 // screen properties
 uniform vec2 texelOffset;
 uniform vec2 texelSize;
 
+//Blur properties
+uniform float gaussianCoeff[MAX_BLUR_SIZE];
 uniform int patchSize;
 uniform float patchSizeF;
+uniform float sigma;
 
 varying vec2 vUv;
 
@@ -36,7 +37,6 @@ vec4 ssdoBufferValue(vec2 screenPos) {
 
 void main()
 {
-	const float sigma = 10.0;
 	float halfSize = patchSizeF/2.0;
 	vec4 result = vec4(0.0,0.0,0.0,1.0);
 	float count = 0.0;

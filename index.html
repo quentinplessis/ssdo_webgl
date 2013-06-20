@@ -94,7 +94,7 @@
 		
 		var ssaoScene, ssaoQuad;
 		var ssaoOnlyShader, ssaoOnlyBuffer;
-		var ssaoDiffuseShader, ssaoDiffuseBuffer;
+		var ssaoDiffuseShader, ssaoDiffuseBuffer, ssaoBlurBuffer, ssaoBlurAuxBuffer;
 
 		var ssdoScene, ssdoQuad;	
 		var ssdoDirectLightingShader, directLightBuffer;
@@ -102,14 +102,15 @@
 		var ssdoBlurShader, ssdoBlurBuffer, ssdoBlurAuxBuffer;
 		var ssdoFinalShader, ssdoFinalBuffer;
 		var camera90;
-		var patchSizeF = 25.0;
-		var sigma = 100.0;
+		var patchSizeF = 5.0;
+		var sigma = 1.0;
 		var rmax1 = 1.0;
 		var rmax2 = 50.0;
-		var numberOfSamplesF = 4.0;
+		var bounceIntensity = 5.0;
+		var numberOfSamplesF = 8.0;
 		
 		//SSDO Multiples views	
-		var enableMultipleViews = false;
+		var enableMultipleViews = 0;
 		var directLightBuffer90, normalsAndDepthBuffer90, diffuseTexture90, coordsTexture90;
 
 		var scenes = [];
@@ -124,11 +125,11 @@
 			names: ['shadowMap1', 'shadowMap2', 'hardShadows', 'phong']};
 		customDisplays['ssdo'] = {cols: 2, rows: 2, 
 			names: ['shadowMap1', 'ssdoDirect', 'ssdoIndirectBounce', 'ssdoFinal']};
-		customDisplays['ssdo90'] = {cols: 1, rows: 2, 
-			names: ['diffuse90','ssdoDirect90']};
+		customDisplays['ssdo90'] = {cols: 2, rows: 2, 
+			names: ['ssdoFinal', 'diffuse90','ssdoDirect90']};
 
 		customDisplays['ssao'] = {cols: 2, rows: 2, 
-			names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
+			names: ['ssaoOnly', 'ssaoBlur', 'ssaoDiffuse', 'secondDepth']};
 		
 		customDisplays['dof'] = {cols: 2, rows: 2, 
 			names: ['dofBlurAux', 'dofBlur', 'dofImage', 'hardShadows']};
@@ -335,7 +336,8 @@
 				{
 					renderer.render(scene, camera90, coordsTexture90, true);
 				}
-				//Second Depth Pass	
+					
+				//7th rendering : compute second depth	
 				var mat = secondDepthShader.getMaterial();
 				mat.side = THREE.DoubleSide;
 				for (var i = 0 ; i < objects.length ; i++)
@@ -346,15 +348,15 @@
 
 			}
 			
-			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
+		/*	if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssdo90' || MODE == 'ssao') {
 				//7th rendering : compute second depth	
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(secondDepthShader.getMaterial());
 				renderer.render(scene, camera, secondDepthTexture, true);
 
 			}
-
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof') {
+*/
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssdo90' || MODE == 'ssao' || MODE == 'dof') {
 				// shadow maps
 				for (var i = 0 ; i < objects.length ; i++)
 					objects[i].setMaterial(shadowMapsShader.getMaterial());
@@ -422,10 +424,23 @@
 				// ssao Only
 				ssaoQuad.setMaterial(ssaoOnlyShader.createMaterial());
 				renderer.render(ssaoScene, cameraRTT, ssaoOnlyBuffer, true);
+
+				// ssao blur pass
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssaoOnlyBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssaoBlurAuxBuffer, true);
+			
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssaoBlurAuxBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(0.0,1.0/window.innerHeight));
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssaoBlurBuffer, true);
 			
 				// ssao with diffuse color
 				ssaoQuad.setMaterial(ssaoDiffuseShader.createMaterial());
 				renderer.render(ssaoScene, cameraRTT, ssaoDiffuseBuffer, true);
+
+			
 			}
 
 			// SSDO
@@ -455,7 +470,7 @@
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);	
-			
+
 				// ssdo blur pass
 				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoIndirectBounceBuffer);
 				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
@@ -471,9 +486,10 @@
 				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 
-
 			
 			}
+
+		
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
 		}
