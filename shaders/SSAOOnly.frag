@@ -33,6 +33,10 @@ void main()
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
 	
+		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
+		//Precompute only numberOfSamples directions in the half positive hemisphere
+		//Add a random rotation (with normal axis)  when you put the direction in the normal space
+		//Result : less noise due to random numbers
 		vec3 vector = normalize(2.0*texture2D(randomTexture, vUv).xyz -1.0);
 		vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale (avec une rotation aléatoire dans ce plan)
 		vec3 bitangent = normalize(cross(normal, tangent));
@@ -72,7 +76,7 @@ void main()
 
 			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
 			{
-				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV); //Position displayed by the camera
+				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV); //Projection of the sample on the surface displayed by the camera
 
 				if (sampleProjectionOnSurface.a == 0.0) // not in the background
 				{
