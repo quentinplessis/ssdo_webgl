@@ -16,7 +16,7 @@ var DisplayManager = Class.create({
 	addView: function(view) {
 		this.views.push(view);
 		var plane = new THREE.PlaneGeometry(1.0, 1.0);
-		this.quads.push(new THREE.Mesh(plane, view.getMaterial()));
+		this.quads.push(new THREE.Mesh(plane, view.createMaterial()));
 	},
 	addDisplay: function(view, name) {
 		if (name != null)
@@ -108,14 +108,14 @@ var DisplayManager = Class.create({
 	},
 	organize: function() {
 		this.cleanScene();
-		var width = window.innerWidth;
-		var height = window.innerHeight;
+		var width = renderingWidth;
+		var height = renderingHeight;
 		if (this.mode.id != null) {
 			//alert(this.mode.id);
 			var id = this.mode.id;
 			var plane = new THREE.PlaneGeometry(width, height);
 			//this.quads[id].geometry = plane;
-			this.quads[id] = new THREE.Mesh(plane, this.views[id].getMaterial());
+			this.quads[id] = new THREE.Mesh(plane, this.views[id].createMaterial());
 			this.quads[id].position.y = height / 2 - height / 2;
 			this.quads[id].position.x = - width / 2 + width / 2;
 			this.quads[id].position.z = 0;
@@ -132,7 +132,7 @@ var DisplayManager = Class.create({
 					y = (i - x) / cols,
 					id = i;
 				//this.quads[id].geometry = plane;
-				this.quads[id] = new THREE.Mesh(plane, this.views[id].getMaterial());
+				this.quads[id] = new THREE.Mesh(plane, this.views[id].createMaterial());
 				this.quads[id].position.y = height / 2 - height / (2 * rows) - y * height / rows;
 				this.quads[id].position.x = - width / 2 + width / (2 * cols) + x * width / cols;
 				this.quads[id].position.z = 0;
@@ -158,7 +158,7 @@ var DisplayManager = Class.create({
 				var x = i % cols,
 					y = (i - x) / cols,
 					id = this.ids[viewsNames[i]];
-				this.quads[id] = new THREE.Mesh(plane, this.views[id].getMaterial());
+				this.quads[id] = new THREE.Mesh(plane, this.views[id].createMaterial());
 				/*this.quads[id].geometry.vertices[0].x = 500;
 				this.quads[id].geometry.vertices[0].y = 500;
 				this.quads[id].geometry.vertices[2].x = -100;

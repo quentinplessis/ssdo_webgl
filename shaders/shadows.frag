@@ -20,7 +20,7 @@ uniform float lightsIntensity[2];
 uniform float lightsAngle[2];
 uniform float lightsAttenuation[2];
 uniform float skyLightIntensity;
-uniform vec2 lightNearFar;
+uniform float lightNearFar[2];
 
 // Material properties
 uniform float matSpecular;
@@ -73,7 +73,7 @@ vec3 gamma(vec3 color) {
 }
 
 float adaptDepth(float z) {
-	return (z - lightNearFar.x) / (lightNearFar.y - lightNearFar.x);
+	return (z - lightNearFar[0]) / (lightNearFar[1] - lightNearFar[0]);
 }
 
 float linstep(float low, float high, float v){

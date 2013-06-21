@@ -5,14 +5,14 @@
 precision highp float;
 #endif
 
-uniform vec2 lightNearFar;
+uniform float lightNearFar[2];
 
 // 3D point properties
 varying vec4 camSpacePos;
 varying vec3 worldNormal;
 
 float adaptDepth(float z) {
-	return (z - lightNearFar.x) / (lightNearFar.y - lightNearFar.x);
+	return (z - lightNearFar[0]) / (lightNearFar[1] - lightNearFar[0]);
 }
 
 void main() {

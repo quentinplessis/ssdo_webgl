@@ -14,7 +14,7 @@ var FizzyText = function() {
 	this.lightAngle = lightDefaultAngle;
 	this.skyLightIntensity = skyLightIntensity;
 	this.lightAttenuation = lightDefaultAttenuation;
-	this.lightFar = lightNearFar.y;
+	this.lightFar = lightNearFar[1];
 	this.lightPosX = 0.0;
 	this.lightPosY = 0.0;
 	this.lightPosZ = 0.0;
@@ -43,7 +43,7 @@ function initControls(json) {
 	gui.remember(text);
 	
 	var displaysFolder = gui.addFolder('Views');
-	displaysFolder.add(text, 'scene', {'Scene1': 'scene1', 'Sponza': 'sponza', 'Cornel': 'cornel', 'Scene3': 'scene3'}).name('Scene').onChange(function(value) {
+	displaysFolder.add(text, 'scene', {'Scene1': 'scene1', 'Sponza': 'sponza', 'Cornel': 'cornel', 'Squirrels': 'squirrel', 'Mario': 'bird', 'Scene3': 'scene3'}).name('Scene').onChange(function(value) {
 		scene = new THREE.Scene();
 		sceneScreen = new THREE.Scene();
 		objects = [];
@@ -130,7 +130,16 @@ function initControls(json) {
 		render();
 	});
 	lightsFolder.add(text, 'lightFar', 500.0, 10000.0).name('Far').onChange(function(value) {
-		lightNearFar.y = value;
+		lightNearFar[1] = value;
+		displayShadowMapShader.setUniform('lightNearFar', 'fv1', lightNearFar);
+		displayManager.addCustomTextureShader(displayShadowMapShader, shadowMaps[0], 'shadowMap1');
+		displayManager.addCustomTextureShader(displayShadowMapShader, shadowMaps[1], 'shadowMap2');
+		for (var i = 0 ; i < lights.length ; i++) {
+			lightsCameras[i] = new THREE.PerspectiveCamera(lightViewAngle, lightRatio, lightNearFar[0], lightNearFar[1]);
+			//lightsCameras[i] = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 1000 );
+			lightsCameras[i].position = lightsPos[i];
+			lightsCameras[i].lookAt(lights[i].getLookAt()); 
+		}
 		render();
 	});
 	lightsFolder.add(text, 'lightPosX').name('X').onChange(function(value) {

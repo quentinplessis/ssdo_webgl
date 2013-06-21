@@ -38,6 +38,8 @@
 	<script src="scenes/Scene3.js"></script>
 	<script src="scenes/SceneCornel.js"></script>
 	<script src="scenes/SceneSquirrel.js"></script>
+	<script src="scenes/SceneBird.js"></script>
+	<script src="scenes/SceneCar.js"></script>
 	<script src="Initialization.js"></script>
 	<script>
 		init();
@@ -133,7 +135,7 @@
 			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
 				var i = objects.length;
 				while (i--)
-					objects[i].setMaterial(normalsAndDepthShader.getMaterial());
+					objects[i].setMaterial(normalsAndDepthShader.createMaterial());
 				renderer.render(scene, camera, normalsAndDepthTexture, true);	
 			}
 			
@@ -210,7 +212,7 @@
 			
 			// 7th rendering : compute second depth
 			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
-				var mat = secondDepthShader.getMaterial();
+				var mat = secondDepthShader.createMaterial();
 				mat.side = THREE.DoubleSide;
 				var i = objects.length;
 				while (i--)
@@ -301,7 +303,7 @@
 			// Depth of field
 			if (MODE == 'all' || MODE == 'dof') {
 				// blur
-				DOFBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(1.0 / window.innerWidth, 0.0));
+				DOFBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(1.0 / renderingWidth, 0.0));
 				DOFBlurShader.setUniform('colorTexture', 't', shadowsTexture);
 				dofQuad.setMaterial(DOFBlurShader.createMaterial());
 				renderer.render(dofScene, cameraRTT, dofAuxTexture, true);
@@ -364,29 +366,48 @@
 		var lastChoiceTime = currentTime;
 		var randomObj = 1;
 		
+		var birdTheta = 0, theta0 = - Math.PI / 12;
+		var birdR = 100.0, r01 = 10.0, r02 = -10.0;
+		var birdSelfTheta = 0.0;
+		
 		function animate() {
 			requestAnimationFrame(animate);
 			currentTime = (new Date()).getTime();
 			if (ANIMATION) {
 				if (currentTime - lastTime >= interval) {
-					/*if (objects[0].position.x >= 100)
-						direction = -1;
-					if (objects[0].position.x <= -100)
-						direction = 1;
-					objects[0].position.x += direction * 10.0;*/
-					//objects[2].rotation.y += direction * 5 / 100;
-					
-					if (currentTime - lastChoiceTime >= 1000) {
-						objects[randomObj].position.y = 0;
-						randomObj = Math.round(1.0 + Math.random() * 20.0);
-						lastChoiceTime = currentTime;
-						//alert(randomObj);
+					if (currentScene == "scene1") {
+						if (objects[0].position.x >= 100)
+							direction = -1;
+						if (objects[0].position.x <= -100)
+							direction = 1;
+						objects[0].position.x += direction * 10.0;
+						//objects[2].rotation.y += direction * 5 / 100;
 					}
-					if (objects[randomObj].position.y >= 50)
-						direction = -1;
-					if (objects[randomObj].position.y <= 0)
-						direction = 1;
-					objects[randomObj].position.y += direction * 10.0
+					else if (currentScene == "squirrel") {
+						if (currentTime - lastChoiceTime >= 1000) {
+							objects[randomObj].position.y = 0;
+							randomObj = Math.round(1.0 + Math.random() * 20.0);
+							lastChoiceTime = currentTime;
+							//alert(randomObj);
+						}
+						if (objects[randomObj].position.y >= 50)
+							direction = -1;
+						if (objects[randomObj].position.y <= 0)
+							direction = 1;
+						objects[randomObj].position.y += direction * 10.0;
+					}
+					else if (currentScene == "bird") {
+						objects[1].position.x = birdR * Math.cos(birdTheta);
+						objects[1].position.z = birdR * Math.sin(birdTheta);
+						objects[1].rotation.y = - birdTheta;
+						objects[2].position.x = (r01 + birdR) * Math.cos(theta0 + birdTheta);
+						objects[2].position.z = (r01 + birdR) * Math.sin(theta0 + birdTheta);
+						objects[2].rotation.y = - birdTheta;
+						objects[3].position.x = (r02 + birdR) * Math.cos(theta0 + birdTheta);
+						objects[3].position.z = (r02 + birdR) * Math.sin(theta0 + birdTheta);
+						objects[3].rotation.y = - birdTheta;
+						birdTheta += Math.PI / 40;
+					}
 					
 					lastTime = currentTime;
 					render();
@@ -400,7 +421,7 @@
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 
-			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setSize(renderingWidth, renderingHeight);
 			controls.handleResize();
 
 			render();

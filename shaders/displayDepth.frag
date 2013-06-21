@@ -3,11 +3,11 @@ precision highp float;
 #endif
 
 uniform sampler2D texture;
-uniform vec2 lightNearFar;
+uniform float camNearFar[2];
 varying vec2 vUv;
 
 float adaptDepth(float z) {
-	return (z - lightNearFar.x) / (lightNearFar.y - lightNearFar.x);
+	return (z - camNearFar[0]) / (camNearFar[1] - camNearFar[0]);
 }
 
 void main() {

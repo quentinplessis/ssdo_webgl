@@ -1,8 +1,10 @@
 if (!Detector.webgl) Detector.addGetWebGLMessage();
 		
+var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
+		
 // Screen
 	var screenWidth = window.innerWidth, screenHeight = window.innerHeight;
-	var texelSize = new THREE.Vector2(1.0 / window.innerWidth, 1.0 / window.innerHeight);
+	var texelSize = new THREE.Vector2(1.0 / renderingWidth, 1.0 / renderingHeight);
 	var horizontalTexel = new THREE.Vector2(texelSize.x, 0.0);
 	var verticalTexel = new THREE.Vector2(0.0, texelSize.y);
 
@@ -10,7 +12,7 @@ if (!Detector.webgl) Detector.addGetWebGLMessage();
 	var	viewAngle = 45, aspect = screenWidth / screenHeight, near = 0.1, far = 10000;
 
 // Lights
-	var lightNearFar = new THREE.Vector2(0.1, 1000.0), lightViewAngle = 70.0, lightRatio = 1.0;
+	var lightNearFar = [0.1, 1000.0], lightViewAngle = 70.0, lightRatio = 1.0;
 	var lightDefaultAngle = 60.0, skyLightIntensity = 0.1, lightDefaultAttenuation = 0.4, lightDefaultIntensity = 1.0;
 
 // Pipeline
@@ -47,7 +49,7 @@ if (!Detector.webgl) Detector.addGetWebGLMessage();
 	var dofResolution = 256, focal = 80, fStop = 20, focusDistance = 380;
 	var camMill = 35;
 	var blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
-	var ppm = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight) / camMill;
+	var ppm = Math.sqrt(renderingWidth * renderingWidth + renderingHeight * renderingHeight) / camMill;
 	//var focal = 180 * camMill / (Math.PI * viewAngle);
 	var dofScene, dofQuad;
 	var DOFBlurTexture, DOFBlurShader;
@@ -73,7 +75,7 @@ if (!Detector.webgl) Detector.addGetWebGLMessage();
 
 // Scenes
 	var scenes = [];
-	var currentScene = "squirrel";
+	var currentScene = "scene1";
 
 // Displays
 	var customDisplays = [];
@@ -105,7 +107,7 @@ if (!Detector.webgl) Detector.addGetWebGLMessage();
 
 	
 // Rendering
-	var MODE = 'normal', ANIMATION = false;
+	var MODE = 'shadows', ANIMATION = false;
 	var shadowMode = 0; // hardShadows
 
 	//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
