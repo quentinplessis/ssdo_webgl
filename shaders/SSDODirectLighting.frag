@@ -2,6 +2,8 @@
 precision highp float;
 #endif
 
+#define NUMBER_OF_SAMPLES_MAX 32
+
 // input buffers
 uniform sampler2D positionsBuffer;
 uniform sampler2D normalsAndDepthBuffer;
@@ -10,9 +12,6 @@ uniform sampler2D diffuseTexture;
 uniform sampler2D randomTexture;
 uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
-
-// screen properties
-uniform vec2 texelSize;
 
 // camera properties
 uniform mat4 cameraProjectionM;
@@ -28,23 +27,19 @@ uniform float lightsIntensity[2];
 //3D point properties
 varying vec2 vUv;
 
-float bias = 0.01;
+//SSDO parameters
+uniform vec3 randomDirections[NUMBER_OF_SAMPLES_MAX];
+uniform int numberOfSamples;
+uniform float numberOfSamplesF;
+uniform float rmax;
 
-float randomFloat(float x, float y, float from, float to) {
-	return texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).w * (to - from) + from;
-}
-
-vec3 randomDirection(float x, float y) {
-	vec3 data = texture2D(randomTexture, vec2(x * texelSize.x, y * texelSize.y)).xyz ;
-	data.xy = 2.0 * data.xy -1.0;
-	return data;
-}
+const float bias = 0.01;
 
 //compute the incoming radiance coming to the sample
 vec4 computeRadiance(vec3 samplePosition)
 {
 	vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
-	for(int j = 0 ; j < 1 ; j++)
+	for(int j = 0 ; j < 2 ; j++)
 	{
 		//Visibility Test...
 		vec4 lightSpacePos4 = lightsView[j] * vec4(samplePosition,1.0);
@@ -94,100 +89,78 @@ void main()
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
 	
-		vec3 vector = normalize(vec3(0.0,1.0,1.0));
-	//	vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale
-		vec3 tangent = normalize(cross(vector, normal));
+		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
+		//Precompute only numberOfSamples directions in the half positive hemisphere
+		//Add a random rotation (with normal axis)  when you put the direction in the normal space
+		//Result : less noise due to random numbers
+		vec3 vector = normalize(2.0*texture2D(randomTexture, vUv).xyz-1.0);
+		vec3 tangent = normalize(vector - dot(vector,normal)*normal); //Dans le plan orthogonal à la normale (rotation aléatoire de la tangente)
 		vec3 bitangent = normalize(cross(normal, tangent));
 		mat3 normalSpaceMatrix = mat3(tangent, bitangent, normal);
-		mat3 normalSpaceMatrixInverse;
+	
+		vec3 sampleDirection;
+		vec3 samplePosition;
+		vec4 projectionInCamSpaceSample;
 
-		//Transpose normalSpaceMatrix = inverse matrix
-		normalSpaceMatrixInverse [0][0] = normalSpaceMatrix [0][0];
-		normalSpaceMatrixInverse [1][1] = normalSpaceMatrix [1][1];
-		normalSpaceMatrixInverse [2][2] = normalSpaceMatrix [2][2];
-		normalSpaceMatrixInverse [0][1] = normalSpaceMatrix [1][0];
-		normalSpaceMatrixInverse [0][2] = normalSpaceMatrix [2][0];
-		normalSpaceMatrixInverse [1][0] = normalSpaceMatrix [0][1];
-		normalSpaceMatrixInverse [1][2] = normalSpaceMatrix [2][1];
-		normalSpaceMatrixInverse [2][0] = normalSpaceMatrix [0][2];
-		normalSpaceMatrixInverse [2][1] = normalSpaceMatrix [1][2];
+		float r4;
+		vec4 camSpaceSample; //sample is back projected in the camera space
+		vec2 screenSpacePositionSampleNormalized; //(x,y) coordinates in screen space, normalize by the w coordinate
+		vec2 sampleUV; // Screen space UV coordinates for the sample
+		float distanceCameraSample; //Distance from the camera to the sample
 
-		//Number of samples we use for the SSDO algorithm
-		const int numberOfSamples = 8;
-		const float numberOfSamplesF = 8.0;
-		const float rmax = 10.0;
-		
-		vec3 directions[numberOfSamples];
-		vec3 samplesPosition[numberOfSamples];
-		vec4 projectionInCamSpaceSample[numberOfSamples];
-
-		//samplesVisibility[i] = true if sample i is not occulted
-		bool samplesVisibility[numberOfSamples];
-
-		//Generate numberOfSamples random directions and random samples (uniform distribution)
-		//The samples are in the hemisphere oriented by the normal vector	
-		float ii = 0.0;
-		for(int i = 0 ; i<numberOfSamples ; i++)
+		vec4 sampleProjectionOnSurface; 
+		float distanceCameraSampleProjection;
+		float secondDepth;
+		float ii = 0.0; //i in float
+	
+		for(int i = 0 ; i < NUMBER_OF_SAMPLES_MAX ; i++)
 		{
+			if (i >= numberOfSamples)
+				break;
 			// random numbers
-			vec3 sampleDirection = vec3(0.0,0.0,0.0);
-
-			sampleDirection = normalize(randomDirection(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF));
-
+			sampleDirection = randomDirections[i];
 			sampleDirection = normalize(normalSpaceMatrix * sampleDirection); //Put the sampleDirection in the normal Space (positive half space)
-			directions[i] = sampleDirection;
-			float r4 = randomFloat(gl_FragCoord.x, (numberOfSamplesF * gl_FragCoord.y + ii) / numberOfSamplesF, 0.01, rmax);
-		
-			samplesPosition[i] = position + bias*normal + r4*sampleDirection;
+			r4 = texture2D(randomTexture, vUv).w*rmax; 
 
+			samplePosition = position + bias*normal + r4 * sampleDirection;
 			//Samples are back projected to the image
-			vec4 camSpaceSample = cameraViewMatrix*vec4(samplesPosition[i],1.0);
-			projectionInCamSpaceSample[i] = (cameraProjectionM * camSpaceSample);
-			vec2 screenSpacePositionSampleNormalized = projectionInCamSpaceSample[i].xy/(projectionInCamSpaceSample[i].w);
-			vec2 sampleUV = screenSpacePositionSampleNormalized*0.5 + 0.5;
+			camSpaceSample = cameraViewMatrix*vec4(samplePosition,1.0);
+			projectionInCamSpaceSample = (cameraProjectionM * camSpaceSample);
+			screenSpacePositionSampleNormalized = projectionInCamSpaceSample.xy/(projectionInCamSpaceSample.w);
+			sampleUV = screenSpacePositionSampleNormalized*0.5 + 0.5;
 
 			//Determines if the sample is visible or not
-			float distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
+			distanceCameraSample = length((camSpaceSample).xyz/camSpaceSample.w);//Normalize with the 4th coordinate
 
 			if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0)
 			{
-				vec4 sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV);
+				sampleProjectionOnSurface =  texture2D(positionsBuffer, sampleUV); //Projection of the sample on the surface displayed by the camera
+
 				if (sampleProjectionOnSurface.a == 0.0) // not in the background
 				{
-					float	distanceCameraSampleProjection = texture2D(normalsAndDepthBuffer,sampleUV).a;
-					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it is an occluder
+					distanceCameraSampleProjection = texture2D(normalsAndDepthBuffer,sampleUV).a;//value of the z buffer
+					if(distanceCameraSample > distanceCameraSampleProjection+bias) //if the sample is inside the surface it may be an occluder
 					{
-						samplesVisibility[i] = false; //The sample is an eventual occluder
-						//Depth peeling
-						float secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
-						if(distanceCameraSample>secondDepth)//The sample is behind an object
+						secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
+						if(distanceCameraSample>secondDepth)//The sample is behind an object : it is visible
 						{
-							samplesVisibility[i] = true; //The sample is visible
-							gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+							gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
 						}	
-
 
 					}
 					else
 					{
 						//Direct illumination is calculted with visible samples
-						samplesVisibility[i] = true; //The sample is visible
-
 						//compute the incoming radiance coming in the direction sampleDirection
-						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
 					}	
 				}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
 				else//If the sample is in the background it is always visible
 				{
-						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplesPosition[i])/numberOfSamplesF;
+						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
 				}
 			}//End SampleUV between  0.0 and 0.1
-			else
-			{
-			//	gl_FragColor = vec4(0.0, 1.0, 1.0, 1.0);
-			}
-		
-			ii += 1.0; // rand
+			ii += 1.0; 
 		}//End for on samples
 	}//End if (currentPos.a == 0.0) // the current point is not in the background
 	else

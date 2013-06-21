@@ -132,15 +132,19 @@
 	
 		function render() {
 			// 1st rendering : computes depth and normals
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'ssdo90' || MODE == 'dof' || MODE == 'motionBlur') {
 				var i = objects.length;
 				while (i--)
 					objects[i].setMaterial(normalsAndDepthShader.createMaterial());
-				renderer.render(scene, camera, normalsAndDepthTexture, true);	
+				renderer.render(scene, camera, normalsAndDepthTexture, true);
+				if (enableMultipleViews)
+				{
+					renderer.render(scene, camera90, normalsAndDepthTexture90, true);
+				}				
 			}
 			
 			// 2nd rendering : diffuse map rendering
-			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'texture' || MODE == 'dof' || MODE == 'motionBlur') {
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'ssdo90' || MODE == 'texture' || MODE == 'dof' || MODE == 'motionBlur') {
 				var i = objects.length;
 				while (i--) {
 					if (objects[i].composedObject)
@@ -154,6 +158,10 @@
 					}
 				}
 				renderer.render(scene, camera, diffuseTexture, true);
+				if(enableMultipleViews)
+				{
+					renderer.render(scene, camera90, diffuseTexture90, true);
+				}
 			}
 			
 			// 3rd rendering : diffuse rendering with lights
@@ -203,11 +211,15 @@
 			}
 			
 			// 6th rendering : computes 3D coords
-			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssao') {
+			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssdo90' || MODE == 'ssao') {
 				var i = objects.length;
 				while (i--)
 					objects[i].setMaterial(coordsShader.getMaterial());
 				renderer.render(scene, camera, coordsTexture, true);
+				if (enableMultipleViews)
+				{
+					renderer.render(scene, camera90, coordsTexture90, true);
+				}
 			}
 			
 			// 7th rendering : compute second depth
@@ -218,10 +230,11 @@
 				while (i--)
 					objects[i].setMaterial(mat);
 				renderer.render(scene, camera, secondDepthTexture, true);
+
 			}
 
 			// Shadow maps
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'dof' || MODE == 'motionBlur') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssdo90' || MODE == 'dof' || MODE == 'motionBlur') {
 				var i = objects.length;
 				while (i--)
 					objects[i].setMaterial(shadowMapsShader.createMaterial());
@@ -250,7 +263,7 @@
 			}
 			
 			// Shadows
-			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') { // || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') {
 				var i = objects.length;
 				while (i--) {
 					if (objects[i].composedObject) {
@@ -324,6 +337,17 @@
 				// ssao Only
 				ssaoQuad.setMaterial(ssaoOnlyShader.createMaterial());
 				renderer.render(ssaoScene, cameraRTT, ssaoOnlyBuffer, true);
+
+				// ssao blur pass
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssaoOnlyBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssaoBlurAuxBuffer, true);
+			
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssaoBlurAuxBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(0.0,1.0/window.innerHeight));
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssaoBlurBuffer, true);
 			
 				// ssao with diffuse color
 				ssaoQuad.setMaterial(ssaoDiffuseShader.createMaterial());
@@ -331,17 +355,48 @@
 			}
 
 			// SSDO
-			if (MODE == 'all' || MODE == 'ssdo') {
+			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssdo90') {
 				// ssdo 1st pass
+				ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture);
+				ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
+				ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera.projectionMatrix);
+				ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera.matrixWorldInverse);
+				ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture);
 				ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
+
 				renderer.render(ssdoScene, cameraRTT, directLightBuffer, true);
+		
+				if(enableMultipleViews)
+				{	
+					ssdoDirectLightingShader.setUniform('positionsBuffer', 't', coordsTexture90);
+					ssdoDirectLightingShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture90);
+					ssdoDirectLightingShader.setUniform('cameraProjectionM', 'm4', camera90.projectionMatrix);
+					ssdoDirectLightingShader.setUniform('cameraViewMatrix', 'm4', camera90.matrixWorldInverse);
+					ssdoDirectLightingShader.setUniform('diffuseTexture', 't', diffuseTexture90);
+					ssdoQuad.setMaterial(ssdoDirectLightingShader.createMaterial());
+
+					renderer.render(ssdoScene, cameraRTT, directLightBuffer90, true);
+				}
 				// ssdo 2nd pass
 				ssdoQuad.setMaterial(ssdoIndirectBounceShader.createMaterial());
-				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
+				renderer.render(ssdoScene, cameraRTT, ssdoIndirectBounceBuffer, true);	
+
 				// ssdo blur pass
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoIndirectBounceBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(1.0/window.innerWidth, 0));
+				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoBlurAuxBuffer, true);
+			
+				ssdoBlurShader.setUniform('ssdoBuffer', 't', ssdoBlurAuxBuffer);
+				ssdoBlurShader.setUniform('texelOffset', 'v2', new THREE.Vector2(0.0,1.0/window.innerHeight));
 				ssdoQuad.setMaterial(ssdoBlurShader.createMaterial());
 				renderer.render(ssdoScene, cameraRTT, ssdoBlurBuffer, true);
+			
+				// ssdo final pass
+				ssdoQuad.setMaterial(ssdoFinalShader.createMaterial());
+				renderer.render(ssdoScene, cameraRTT, ssdoFinalBuffer, true);
 			}
+			
 			// displays the scene
 			renderer.render(sceneScreen, cameraRTT);
 		}
@@ -358,14 +413,16 @@
 					};
 		})();
 
-		var direction = 1;
+		// animation variables
+		var direction = 1
 		var lastTime = (new Date()).getTime();
 		var currentTime = lastTime;
 		var interval = 20;
 		
+		// squirrels
 		var lastChoiceTime = currentTime;
 		var randomObj = 1;
-		
+		// birds
 		var birdTheta = 0, theta0 = - Math.PI / 12;
 		var birdR = 100.0, r01 = 10.0, r02 = -10.0;
 		var birdSelfTheta = 0.0;
@@ -376,11 +433,11 @@
 			if (ANIMATION) {
 				if (currentTime - lastTime >= interval) {
 					if (currentScene == "scene1") {
-						if (objects[0].position.x >= 100)
+						if (objects[0].position.y >= 100)
 							direction = -1;
-						if (objects[0].position.x <= -100)
+						if (objects[0].position.y <= -50)
 							direction = 1;
-						objects[0].position.x += direction * 10.0;
+						objects[0].position.y += direction * 10.0;
 						//objects[2].rotation.y += direction * 5 / 100;
 					}
 					else if (currentScene == "squirrel") {
@@ -408,11 +465,23 @@
 						objects[3].rotation.y = - birdTheta;
 						birdTheta += Math.PI / 40;
 					}
-					
 					lastTime = currentTime;
 					render();
 				}
 			}
+		
+			camera90.position.x = -camera.position.x;	
+			camera90.position.y = camera.position.y;	
+			camera90.position.z = camera.position.z;
+			camera90.rotation.x = camera.rotation.x;
+			camera90.rotation.y = camera.rotation.y;
+			camera90.rotation.z = camera.rotation.z;
+			camera90.lookAt(new THREE.Vector3(0.0,0.0,0.0));	
+			//Rotation de 90° camera
+		//	var rotationMatrix90 = new THREE.Matrix4().makeRotationAxis(camera.up, -Math.PI/2);
+		//	camera90.applyMatrix(rotationMatrix90);			
+		//	camera90.matrixWorldInverse = camera.matrixWorldInverse;			
+		//	camera90.matrixWorld = camera.matrixWorld;			
 			controls.update(clock.getDelta());
 			stats.update();
 		}

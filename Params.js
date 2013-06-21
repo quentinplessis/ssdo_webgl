@@ -64,14 +64,23 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 // SSAO
 	var ssaoScene, ssaoQuad;
 	var ssaoOnlyShader, ssaoOnlyBuffer;
-	var ssaoDiffuseShader, ssaoDiffuseBuffer;
+	var ssaoDiffuseShader, ssaoDiffuseBuffer, ssaoBlurBuffer, ssaoBlurAuxBuffer;
 
 // SSDO
 	var randomTexture;
 	var ssdoScene, ssdoQuad;
 	var ssdoDirectLightingShader, directLightBuffer;
-	var ssdoIndirectBounceShader, ssdoFinalBuffer;
-	var ssdoBlurShader, ssdoBlurBuffer;
+	var ssdoIndirectBounceShader, ssdoIndirectBounceBuffer;
+	var ssdoBlurShader, ssdoBlurBuffer, ssdoBlurAuxBuffer;
+	var ssdoFinalShader, ssdoFinalBuffer;
+	var camera90;
+	var patchSizeF = 25.0, sigma = 100.0;
+	var rmax1 = 1.0, rmax2 = 50.0;
+	var bounceIntensity = 5.0, numberOfSamplesF = 8.0;
+	
+	//SSDO Multiples views	
+	var enableMultipleViews = 0;
+	var directLightBuffer90, normalsAndDepthBuffer90, diffuseTexture90, coordsTexture90;
 
 // Scenes
 	var scenes = [];
@@ -95,11 +104,13 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 		names: ['velocity', 'motionBlur']};
 	
 	customDisplays['ssao'] = {cols: 2, rows: 2, 
-		names: ['ssaoOnly', 'ssaoDiffuse', 'depth', 'secondDepth']};
-	//	names: ['ssaoOnly']};
+		names: ['ssaoOnly', 'ssaoBlur', 'ssaoDiffuse', 'secondDepth']};
 	
 	customDisplays['ssdo'] = {cols: 2, rows: 2, 
-		names: ['shadowMap1', 'ssdoDirect', 'ssdoFinal', 'ssdoBlur']};
+		names: ['shadowMap1', 'ssdoDirect', 'ssdoIndirectBounce', 'ssdoFinal']};
+	
+	customDisplays['ssdo90'] = {cols: 2, rows: 2, 
+		names: ['ssdoFinal', 'diffuse90','ssdoDirect90']};
 
 	customDisplays['texture'] = {names: ['diffuseMap']};
 	
@@ -107,7 +118,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 
 	
 // Rendering
-	var MODE = 'shadows', ANIMATION = false;
+	var MODE = 'ssdo', ANIMATION = false;
 	var shadowMode = 0; // hardShadows
 
 	//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps

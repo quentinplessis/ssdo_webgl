@@ -31,6 +31,15 @@ var FizzyText = function() {
 	// motion blur
 	this.mbIntensity = mbIntensity;
 	this.mbSamples = mbSamples;
+	//SSDO
+	this.rmax1 = rmax1;
+	this.rmax2 = rmax2;
+	this.bounceIntensity = bounceIntensity;
+	this.numberOfSamplesF = numberOfSamplesF;
+	this.enableMultipleViews = enableMultipleViews;
+	//Blur
+	this.patchSizeF = patchSizeF;
+	this.sigma = sigma;
 };
 
 function initControls(json) {
@@ -228,7 +237,7 @@ function initControls(json) {
 		render();
 	});
 	dofFolder.open();
-	
+
 	var motionBlurFolder = gui.addFolder("Motion blur");
 	motionBlurFolder.add(text, 'mbIntensity', 0.0, 20.0).name("Intensity").onChange(function(value) {
 		velocityShader.setUniform('intensity', 'f', value);
@@ -239,4 +248,57 @@ function initControls(json) {
 		render();
 	});
 	motionBlurFolder.open();
+
+	var ssdoFolder = gui.addFolder("SSDO");
+	ssdoFolder.add(text, 'rmax1', 0, 128).name("Rmax1").onChange(function(value) {
+		rmax1 = value;
+		ssdoDirectLightingShader.setUniform('rmax', 'f', rmax1);	
+		ssaoOnlyShader.setUniform('rmax', 'f', rmax1);	
+		ssaoDiffuseShader.setUniform('rmax', 'f', rmax1);	
+		render();
+	});
+	ssdoFolder.add(text, 'rmax2', 0, 128).name("Rmax2").onChange(function(value) {
+		rmax2 = value;
+		ssdoIndirectBounceShader.setUniform('rmax', 'f', rmax2);
+		render();
+	});
+
+	ssdoFolder.add(text, 'numberOfSamplesF', 0, 32).name("Samples").onChange(function(value) {
+		numberOfSamplesF = value;
+		numberOfSamples = Math.round(value);
+		ssdoDirectLightingShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
+		ssdoDirectLightingShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
+		ssdoIndirectBounceShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
+		ssdoIndirectBounceShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
+		render();
+	});
+
+	ssdoFolder.add(text, 'bounceIntensity', 0, 100).name("Intensity").onChange(function(value) {
+		bounceIntensity = value;
+		ssdoIndirectBounceShader.setUniform('bounceIntensity', 'f', bounceIntensity);
+		render();
+	});
+
+	ssdoFolder.add(text, 'enableMultipleViews').name("Multiple Views").onChange(function(value) {
+		if(value)
+			enableMultipleViews = 0;
+		else
+			enableMultipleViews = 1;
+		ssdoIndirectBounceShader.setUniform('enableMultipleViews', 'i', enableMultipleViews);
+		render();
+	});
+
+	var blurFolder = gui.addFolder("Blur");
+	blurFolder.add(text, 'patchSizeF', 0, 128).name("Size").onChange(function(value) {
+		patchSizeF = value;
+		ssdoBlurShader.setUniform('patcheSize', 'i', Math.round(patchSizeF));	
+		ssdoBlurShader.setUniform('patcheSizeF', 'f', patchSizeF);	
+		render();
+	});
+	blurFolder.add(text, 'sigma', 0, 1000).name("Sigma").onChange(function(value) {
+		sigma = value;
+		ssdoBlurShader.setUniform('sigma', 'f', sigma);	
+		render();
+	});
 }
+
