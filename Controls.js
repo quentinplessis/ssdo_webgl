@@ -281,23 +281,23 @@ function initControls(json) {
 
 	ssdoFolder.add(text, 'enableMultipleViews').name("Multiple Views").onChange(function(value) {
 		if(value)
-			enableMultipleViews = 0;
-		else
 			enableMultipleViews = 1;
+		else
+			enableMultipleViews = 0;
 		ssdoIndirectBounceShader.setUniform('enableMultipleViews', 'i', enableMultipleViews);
 		render();
 	});
 
 	var blurFolder = gui.addFolder("Blur");
-	blurFolder.add(text, 'patchSizeF', 0, 128).name("Size").onChange(function(value) {
+	blurFolder.add(text, 'patchSizeF', 0, 32).name("Size").onChange(function(value) {
 		patchSizeF = value;
-		ssdoBlurShader.setUniform('patcheSize', 'i', Math.round(patchSizeF));	
-		ssdoBlurShader.setUniform('patcheSizeF', 'f', patchSizeF);	
+		ssdoBlurShader.setUniform('patchSize', 'i', Math.round(patchSizeF));	
+		ssdoBlurShader.setUniform('patchSizeF', 'f', patchSizeF);	
 		render();
 	});
-	blurFolder.add(text, 'sigma', 0, 1000).name("Sigma").onChange(function(value) {
+	blurFolder.add(text, 'sigma', 0, 100).name("Sigma").onChange(function(value) {
 		sigma = value;
-		ssdoBlurShader.setUniform('sigma', 'f', sigma);	
+		ssdoBlurShader.setUniform('sigma', 'f', sigma);
 		render();
 	});
 }
