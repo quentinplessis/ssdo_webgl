@@ -21,17 +21,6 @@ scenes["scene3"].setCamera = function() {
 }
 
 scenes["scene3"].loadWorld = function() {
-	/*loadOFF('models/ram.off');
-	objects[0].position.x = 0;
-	objects[0].position.z = 0;
-	objects[0].position.y = -50;
-	objects[0].rotation.x = - Math.PI / 2;
-	materials[0] = jQuery.extend(true, {}, blankMaterial);
-	materials[0]['matDiffuseColor'] = new THREE.Vector4(0.5, 0.0, 0.5, 1.0);
-	//materials[0]['matEmissiveColor'] = new THREE.Vector4(0.0, 1.0, 0, 1.0);
-	//materials[0]['matEmissive'] = 0.8;
-	scene.add(objects[0]);*/
-	
 	objects[0] = new THREE.Mesh( new THREE.CubeGeometry( 50, 50, 50 ));
 	objects[0].position.y = -50;
 	objects[0].position.x = -50;

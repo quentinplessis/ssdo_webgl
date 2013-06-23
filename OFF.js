@@ -1,4 +1,9 @@
-
+/**
+ * OFF.js
+ * Loads an off file and adds it to the scene.
+ * Author : Quentin Plessis
+ */
+ 
 function loadOFF(fileName, _scale) {
 	$.ajax({
 		url: fileName,

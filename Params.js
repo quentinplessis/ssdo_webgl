@@ -1,3 +1,9 @@
+/**
+ * Params.js
+ * Defines all the parameters of the application.
+ * Authors : Quentin Plessis, Antoine Toisoul
+ */
+ 
 if (!Detector.webgl) Detector.addGetWebGLMessage();
 		
 var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
@@ -100,8 +106,8 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	customDisplays['dof'] = {cols: 2, rows: 2, 
 		names: ['dofBlurAux', 'dofBlur', 'dofImage', 'shadows']};
 		
-	customDisplays['motionBlur'] = {cols: 2, rows: 1, 
-		names: ['velocity', 'motionBlur']};
+	customDisplays['motionBlur'] = {cols: 1, rows: 1, 
+		names: ['motionBlur']};
 	
 	customDisplays['ssao'] = {cols: 2, rows: 2, 
 		names: ['ssaoOnly', 'ssaoBlur', 'ssaoDiffuse', 'secondDepth']};

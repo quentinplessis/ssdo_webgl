@@ -1,4 +1,10 @@
-
+/**
+ * DisplayManager.js
+ * Class that provides a simple way of displaying multiple rendering views with THREE JS.
+ * The views can be organized by grids and browsed simply.
+ * Author : Quentin Plessis
+ */
+ 
 var DisplayManager = Class.create({
     // Constructor
     initialize: function(scene) { 
@@ -111,7 +117,6 @@ var DisplayManager = Class.create({
 		var width = renderingWidth;
 		var height = renderingHeight;
 		if (this.mode.id != null) {
-			//alert(this.mode.id);
 			var id = this.mode.id;
 			var plane = new THREE.PlaneGeometry(width, height);
 			//this.quads[id].geometry = plane;

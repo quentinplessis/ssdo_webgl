@@ -31,6 +31,7 @@ scenes["squirrel"].loadWorld = function() {
 	
 	var cols = 5;
 	
+	// loop does not work -> strange
 	/*for (var i = 1 ; i < 3 ; i++) {
 		objects[i] = new THREE.Mesh();
 		materials[i] = jQuery.extend(true, {}, blankMaterial);

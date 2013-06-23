@@ -1,3 +1,9 @@
+/**
+ * Random.js
+ * Creates an OpenGL texture of random floats.
+ * Authors : Quentin Plessis, Antoine Toisoul
+ */
+ 
 function createRandTexture(cols, rows, depth)
 {
 	var width = 3;

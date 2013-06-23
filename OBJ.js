@@ -1,3 +1,10 @@
+/**
+ * OBJ.js
+ * Loads an OBJ file by using THREE JS examples provided OBJ loader,
+ * adapted to be compatible with the rest of the pipeline.
+ * Author : Quentin Plessis
+ */
+ 
 function loadOBJ(i, initObj, obj, mtl) {
 	var loader = new THREE.OBJMTLLoader();
 	loader.addEventListener('load', function (event) {

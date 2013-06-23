@@ -1,4 +1,13 @@
-// process lights for shaders
+/**
+ * Initialization.js
+ * Initializes the different shaders used
+ * and the scenes (camera, objects, lights)
+ * Authors : Quentin Plessis, Antoine Toisoul
+ */
+
+/**
+ * Process lights for shaders
+ */
 function processLights() {
 	var lightsNumber = lights.length;
 	for (var i = 0 ; i < lights.length ; i++) {
@@ -23,11 +32,17 @@ function processLights() {
 	shadowMapAux2 = new THREE.WebGLRenderTarget(shadowMapsFullResolution, shadowMapsFullResolution, options);
 }
 
+/**
+ * Lights initialization
+ */
 function initLights() {
 	scenes[currentScene].loadLights();
 	processLights();
 }
 
+/**
+ * Shaders initialization
+ */
 function initShaders() {
 	shaders['phong'] = new PhongShader(lightsPos, lightsColor, lightsIntensity);
 	rtTextures['phong'] = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
@@ -91,10 +106,9 @@ function initShaders() {
 	shadowMapBlurShader = new Shader();
 	shadowMapBlurShader.loadShader('shaders/texture.vert', 'vertex');
 	shadowMapBlurShader.loadShader('shaders/shadowMapBlur.frag', 'fragment');
-	var test = 4.0;
-	shadowMapBlurShader.setUniform('blurSize', 'f', test);
+	shadowMapBlurShader.setUniform('blurSize', 'f', shadowMapsBlurSize);
 	
-	// hard shadows
+	// shadows
 	shadowsTexture = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
 	shadowsShader = new Shader();
 	shadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
@@ -290,6 +304,9 @@ function initShaders() {
 	
 }
 
+/**
+ * Process objects to add some information
+ */
 function processObjects() {
 	var i = objects.length;
 	while (i--) {
@@ -300,7 +317,9 @@ function processObjects() {
 	}
 }
 
-// Initialization of the world
+/**
+ * Initialization of the world
+ */
 function initScene() {
 	scene = new THREE.Scene();
 	sceneScreen = new THREE.Scene();
@@ -344,6 +363,9 @@ function initScene() {
 	}*/
 }
 
+/**
+ * Initialization of display manager
+ */
 function initDisplayManager() {
 	// displays for the different renderings
 	displayManager = new DisplayManager(sceneScreen);
@@ -378,6 +400,9 @@ function initDisplayManager() {
 	displayManager.display(customDisplays[MODE]);
 }
 
+/**
+ * Camera controled by a trackball
+ */
 function initCameraControls(cam) {
 	/*controls = new THREE.FirstPersonControls(cam, renderer.domElement);
 	controls.movementSpeed = 70;
@@ -403,7 +428,9 @@ function initCameraControls(cam) {
 	controls.addEventListener('change', render);
 }
 
-// Initialization
+/**
+ * Initialization
+ */
 function init() {
 	camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
 	previousCameraViewMatrix = new THREE.Matrix4();
@@ -415,7 +442,6 @@ function init() {
 	camera90 = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
 	camera90.position.y = 200;
 	camera90.position.z = 300;
-
 	cameraRTT.position.z = 100;
 	
 	// renderer

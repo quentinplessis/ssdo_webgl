@@ -1,8 +1,14 @@
+/**
+ * Controls.js
+ * Displays a control panel allowing the user to change
+ * significant parameters.
+ * Authors : Quentin Plessis, Antoine Toisoul
+ */
+
 var FizzyText = function() {	
 	// views
 	this.scene = currentScene;
-	this.gridDisplayed = 'overview';
-	this.viewDisplayed = 'phong';
+	this.gridDisplayed = MODE;
 	this.nextView = function() { if (!displayManager.nextView()) { MODE = 'all'; } render(); };
 	this.previousView = function() { if (!displayManager.previousView()) { MODE = 'all'; } render(); };
 	// lights
@@ -15,9 +21,6 @@ var FizzyText = function() {
 	this.skyLightIntensity = skyLightIntensity;
 	this.lightAttenuation = lightDefaultAttenuation;
 	this.lightFar = lightNearFar[1];
-	this.lightPosX = 0.0;
-	this.lightPosY = 0.0;
-	this.lightPosZ = 0.0;
 	// shadows
 	this.mapsResolution = shadowMapsResolution;
 	this.vsm = shadowMode == 1;
@@ -49,8 +52,12 @@ function initControls(json) {
 		load: json//,
 		//preset: 'Flow'
 	});*/
-	gui.remember(text);
+	//gui.remember(text);
+	gui.close();
 	
+/**
+ * Views
+ */
 	var displaysFolder = gui.addFolder('Views');
 	displaysFolder.add(text, 'scene', {'Scene1': 'scene1', 'Sponza': 'sponza', 'Cornel': 'cornel', 'Squirrels': 'squirrel', 'Mario': 'bird', 'Scene3': 'scene3'}).name('Scene').onChange(function(value) {
 		scene = new THREE.Scene();
@@ -73,15 +80,13 @@ function initControls(json) {
 		displayManager.display(customDisplays[MODE]);
 		render();
 	});
-	/*displaysFolder.add(text, 'viewDisplayed', {'Texture': 'diffuseMap', 'Phong': 'phong', 'Shadows': 'shadows', 'Random': 'random'}).name('View').onChange(function(value) {
-		MODE = 'all';
-		displayManager.display({names: [text.viewDisplayed]});
-		render();
-	});*/
 	displaysFolder.add(text, 'nextView').name('Next view');
 	displaysFolder.add(text, 'previousView').name('Previous view');
 	//displaysFolder.open();
 	
+/**
+ * Lights
+ */
 	var lightsFolder = gui.addFolder('Lights');
 	lightsFolder.add(text, 'skyLightIntensity', 0, 1).step(0.05).name('Sky light').onChange(function(value) {
 		skyLightIntensity = value;
@@ -151,32 +156,11 @@ function initControls(json) {
 		}
 		render();
 	});
-	lightsFolder.add(text, 'lightPosX').name('X').onChange(function(value) {
-		if (text.allLights)
-			for (var i = 0 ; i < lights.length ; i++)
-				lightsPos[i].x = value;
-		else
-			lightsPos[text.selectedLight].x = value;
-		render();
-	});
-	lightsFolder.add(text, 'lightPosY').name('Y').onChange(function(value) {
-		if (text.allLights)
-			for (var i = 0 ; i < lights.length ; i++)
-				lightsPos[i].y = value;
-		else
-			lightsPos[text.selectedLight].y = value;
-		render();
-	});
-	lightsFolder.add(text, 'lightPosZ').name('Z').onChange(function(value) {
-		if (text.allLights)
-			for (var i = 0 ; i < lights.length ; i++)
-				lightsPos[i].z = value;
-		else
-			lightsPos[text.selectedLight].z = value;
-		render();
-	});
 	//lightsFolder.open();
-	
+
+/**
+ * Shadows
+ */
 	var shadowsFolder = gui.addFolder("Shadows");
 	shadowsFolder.add(text, 'mapsResolution', 0, 512).name("Shadow maps resolution").onChange(function(value) {
 		shadowMapsResolution = Math.round(value);
@@ -200,8 +184,11 @@ function initControls(json) {
 		shadowMapBlurShader.setUniform('blurSize', 'f', shadowMapsBlurSize);
 		render();
 	});
-	shadowsFolder.open();
-	
+	//shadowsFolder.open();
+
+/**
+ * Depth of field
+ */
 	var dofFolder = gui.addFolder("Depth of Field");
 	dofFolder.add(text, 'dofResolution', 0, 512).name("Blur resolution").onChange(function(value) {
 		dofResolution = Math.round(value);
@@ -236,8 +223,11 @@ function initControls(json) {
 		DOFImageShader.setUniform('blurCoefficient', 'f', blurCoeff);
 		render();
 	});
-	dofFolder.open();
+	//dofFolder.open();
 
+/**
+ * Motion blur
+ */
 	var motionBlurFolder = gui.addFolder("Motion blur");
 	motionBlurFolder.add(text, 'mbIntensity', 0.0, 20.0).name("Intensity").onChange(function(value) {
 		velocityShader.setUniform('intensity', 'f', value);
@@ -247,7 +237,7 @@ function initControls(json) {
 		motionBlurShader.setUniform('samplesNumber', 'f', value);
 		render();
 	});
-	motionBlurFolder.open();
+	//motionBlurFolder.open();
 
 	var ssdoFolder = gui.addFolder("SSDO");
 	ssdoFolder.add(text, 'rmax1', 0, 128).name("Rmax1").onChange(function(value) {

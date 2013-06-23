@@ -1,4 +1,12 @@
-
+/**
+ * Shader.js
+ * This class defines a complete shader with uniforms and attributes.
+ * An instance of this class will contain a vertex shader, a fragment shader,
+ * a list a uniforms and a list of attributes.
+ * The createMaterial() method creates the THREE JS material associated to this shader.
+ * Author : Quentin Plessis
+ */
+ 
 var Shader = Class.create({
     // Constructor
     initialize: function() {  

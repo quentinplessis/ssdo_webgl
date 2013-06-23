@@ -1,4 +1,10 @@
-
+/**
+ * Light.js
+ * Class denoting a light.
+ * Adapted for THREE JS.
+ * Author : Quentin Plessis
+ */
+ 
 // hexa to decimal
 function h2d(hexa) {
 	return parseInt(hexa, 16);
