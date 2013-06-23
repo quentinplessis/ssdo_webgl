@@ -88,6 +88,7 @@ void main()
 		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
+		vec4 color = vec4(0.0,0.0,0.0,0.0);
 	
 		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
 		//Precompute only numberOfSamples directions in the half positive hemisphere
@@ -144,7 +145,7 @@ void main()
 						secondDepth = texture2D(secondDepthBuffer, sampleUV).a;
 						if(distanceCameraSample>secondDepth)//The sample is behind an object : it is visible
 						{
-							gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
+							color += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
 						}	
 
 					}
@@ -152,20 +153,22 @@ void main()
 					{
 						//Direct illumination is calculted with visible samples
 						//compute the incoming radiance coming in the direction sampleDirection
-						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
+						color += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
 					}	
 				}//End 	if (sampleProjectionOnSurface.a == 0.0) not in the background
 				else//If the sample is in the background it is always visible
 				{
-						gl_FragColor += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
+						color += 2.0*texture2D(diffuseTexture,vUv)*max(dot(normal, sampleDirection),0.0)*computeRadiance(samplePosition)/numberOfSamplesF;
 				}
 			}//End SampleUV between  0.0 and 0.1
 			ii += 1.0; 
 		}//End for on samples
+		gl_FragColor = vec4(clamp(color.xyz, 0.0,1.0), 1.0);
 	}//End if (currentPos.a == 0.0) // the current point is not in the background
 	else
 	{
 		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);
 	}
+	
 }
 
