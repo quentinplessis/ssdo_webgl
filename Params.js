@@ -80,7 +80,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var ssdoBlurShader, ssdoBlurBuffer, ssdoBlurAuxBuffer;
 	var ssdoFinalShader, ssdoFinalBuffer;
 	var camera90;
-	var patchSizeF = 25.0, sigma = 100.0;
+	var patchSizeF = 25.0, sigma = 1.0;
 	var rmax1 = 1.0, rmax2 = 50.0;
 	var bounceIntensity = 5.0, numberOfSamplesF = 8.0;
 	
