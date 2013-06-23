@@ -51,12 +51,12 @@
 		<?php
 			if (isset($_GET['scene'])) {
 		?>
-			currentScene = '<?php echo mysql_real_escape_string(htmlspecialchars($_GET['scene'])); ?>';
+			currentScene = '<?php echo htmlspecialchars($_GET['scene']); ?>';
 		<?php
 			}
 			if (isset($_GET['mode'])) {
 		?>
-			MODE = '<?php echo mysql_real_escape_string(htmlspecialchars($_GET['mode'])); ?>';
+			MODE = '<?php echo htmlspecialchars($_GET['mode']); ?>';
 		<?php
 			}
 		?>
