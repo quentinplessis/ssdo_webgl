@@ -57,11 +57,12 @@ void main()
 
 	if(count != 0.0)
 	{	
-		gl_FragColor = result/count;
+		result /= count;
+		gl_FragColor = vec4(clamp(result.xyz,0.0,1.0), 1.0);
 	}
 	else
 	{
-		gl_FragColor = result;
+		gl_FragColor = vec4(clamp(result.xyz,0.0,1.0), 1.0);
 	}
 }
 

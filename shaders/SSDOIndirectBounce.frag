@@ -51,7 +51,7 @@ void main()
 		gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
-	
+		vec4 color = vec4(0.0,0.0,0.0,0.0);	
 		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
 		//Precompute only numberOfSamples directions in the half positive hemisphere
 		//Add a random rotation (with normal axis)  when you put the direction in the normal space
@@ -119,7 +119,7 @@ void main()
 							vec3 normalSpaceSampleProjectionOnSurface = normalSpaceMatrix* sampleProjectionOnSurface.xyz;
 							if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
 							{	
-								gl_FragColor += bounceIntensity * max(dot(-transmittanceDirection, normal),0.0)* directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
+								color += bounceIntensity * max(dot(-transmittanceDirection, normal),0.0)* directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
 							//Formula presented in the article
 							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)* pow(rmax, 2.0)* max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)* max(dot(transmittanceDirection, -normal), 0.0) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
 							}
@@ -136,7 +136,6 @@ void main()
 								vec2 sampleUV90 = screenSpace90PositionSampleNormalized*0.5 + 0.5; //UV coordinates
 						
 								vec4 directLightingVector90 = texture2D(directLightBuffer90,sampleUV90);
-								gl_FragColor += bounceIntensity * directLightingVector90/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));	
 						
 								vec4 cam90SpaceSample = cameraViewMatrix90*vec4(samplePosition,1.0);
 								float distanceCamera90Sample = length((cam90SpaceSample).xyz/cam90SpaceSample.w);//Normalize with the 4th coordinate
@@ -148,7 +147,7 @@ void main()
 								{
 									if(distanceCamera90Sample > distanceCamera90SampleProjection)//The sample is an occluder in the 2nd camera
 									{	
-										gl_FragColor +=	bounceIntensity * max(dot(-transmittanceDirection, normal),0.0)* directLightingVector90/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));	
+										color += bounceIntensity * max(dot(-transmittanceDirection, normal),0.0)* directLightingVector90/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));	
 									}
 								}
 							}
@@ -157,6 +156,7 @@ void main()
 				}//End if (sampleProjectionOnSurface.a == 0.0) not in the backgound
 			ii += 1.0; 
 		}//End for on samples
+		gl_FragColor = vec4(clamp(color.xyz,0.0,1.0), 1.0);
 	}
 	else
 	{
