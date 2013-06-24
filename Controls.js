@@ -233,7 +233,7 @@ function initControls(json) {
 		velocityShader.setUniform('intensity', 'f', value);
 		render();
 	});
-	motionBlurFolder.add(text, 'mbSamples', 1.0, 50.0).name("Intensity").onChange(function(value) {
+	motionBlurFolder.add(text, 'mbSamples', 1.0, 50.0).name("Samples").onChange(function(value) {
 		motionBlurShader.setUniform('samplesNumber', 'f', value);
 		render();
 	});

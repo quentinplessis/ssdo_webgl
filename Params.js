@@ -52,7 +52,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var shadowsShader, shadowsTexture;
 
 // Depth of field
-	var dofResolution = 256, focal = 80, fStop = 20, focusDistance = 380;
+	var dofResolution = 256, focal = 80, fStop = 15, focusDistance = 380;
 	var camMill = 35;
 	var blurCoeff = focal * focal / ((focusDistance - focal) * fStop);
 	var ppm = Math.sqrt(renderingWidth * renderingWidth + renderingHeight * renderingHeight) / camMill;
