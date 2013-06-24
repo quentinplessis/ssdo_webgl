@@ -9,8 +9,6 @@ uniform sampler2D shadowMap;
 uniform sampler2D shadowMap1;
 uniform int shadowMode;
 
-uniform vec2 texelSize;
-
 // Lights
 uniform mat4 lightsView[2];
 uniform mat4 lightsProj[2];
@@ -23,19 +21,13 @@ uniform float skyLightIntensity;
 uniform float lightNearFar[2];
 
 // Material properties
-uniform float matSpecular;
-uniform float shininess;
 uniform sampler2D diffuseTexture;
-uniform vec4 matSpecularColor;
+uniform sampler2D specularTexture;
 
 // 3D point properties
-varying vec4 worldPos;
-varying vec3 worldNormal;
-
-vec4 matDiffusion(vec2 screenPos) {
-	vec2 uv = screenPos * texelSize;
-	return texture2D(diffuseTexture, uv);
-}
+uniform sampler2D positionsBuffer;
+uniform sampler2D normalsAndDepthBuffer;
+varying vec2 vUv;
 
 float attenuation(vec3 dir, float div) {
 	float dist = length(dir);
@@ -59,9 +51,9 @@ vec3 phong(vec3 p, vec3 n, int i) {
 	float diffuse = max(dot(l, n), 0.0);
 	vec3 r = reflect(-l, n);
 	float spec = max(dot(r, v), 0.0);
-	spec = pow(spec, shininess);
+	spec = pow(spec, texture2D(specularTexture, vUv).a);
 	spec = max(spec, 0.0);	
-	return vec3((diffuse * matDiffusion(gl_FragCoord.xy) + spec * matSpecular * matSpecularColor) * lightsColor[i] * lightsIntensity[i]);
+	return vec3((diffuse * texture2D(diffuseTexture, vUv) + spec * vec4(texture2D(specularTexture, vUv).xyz, 1.0)) * lightsColor[i] * lightsIntensity[i]);
 }
 
 vec3 skyLight(vec3 normal) {
@@ -95,38 +87,44 @@ float VSM(sampler2D depths, vec2 uv, float compare){
 
 void main() {
 	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-	vec3 p = vec3(worldPos);
-	vec3 n = normalize(worldNormal);
-	for (int i = 0 ; i < 2 ; i++) {
-		vec3 lightSpacePos = (lightsView[i] * worldPos).xyz;
-		vec3 lightSpacePosNormalized = normalize(lightSpacePos);
-		vec4 lightScreenSpacePos = lightsProj[i] * vec4(lightSpacePos, 1.0);
-		vec2 lightSSpacePosNormalized = lightScreenSpacePos.xy / lightScreenSpacePos.w;
-		vec2 lightUV = lightSSpacePosNormalized * 0.5 + 0.5;
-		
-		vec4 data;
-		float visibility = 0.0;
-		if (i == 0) {
-			data = texture2D(shadowMap, lightUV);
-			if (data.r == 0.0)
-				visibility = VSM(shadowMap, lightUV, adaptDepth(length(lightSpacePos)));
-		}
-		else {
-			data = texture2D(shadowMap1, lightUV);
-			if (data.r == 0.0)
-				visibility = VSM(shadowMap1, lightUV, adaptDepth(length(lightSpacePos)));
-		}
-		
-		if (lightUV.x >= 0.0 && lightUV.x <= 1.0 && lightUV.y >= 0.0 && lightUV.y <= 1.0) {
-			vec3 excident = (
-				skyLight(n) +
-				phong(p, n, i) *
-				influence(lightSpacePosNormalized, lightsAngle[i]) *
-				attenuation(lightSpacePos, lightsAttenuation[i]) *
-				visibility *
-				vec3(1.0, 1.0, 1.0)
-			);
-			gl_FragColor += vec4(gamma(excident), 1.0);
+	vec4 worldPos = texture2D(positionsBuffer, vUv);
+	if (worldPos.a == 0.0) { // not in the background
+		worldPos = vec4(worldPos.xyz, 1.0);
+		vec3 p = vec3(worldPos);
+		vec3 n = normalize(vec3(texture2D(normalsAndDepthBuffer, vUv)));
+		for (int i = 0 ; i < 2 ; i++) {
+			vec3 lightSpacePos = (lightsView[i] * worldPos).xyz;
+			vec3 lightSpacePosNormalized = normalize(lightSpacePos);
+			vec4 lightScreenSpacePos = lightsProj[i] * vec4(lightSpacePos, 1.0);
+			vec2 lightSSpacePosNormalized = lightScreenSpacePos.xy / lightScreenSpacePos.w;
+			vec2 lightUV = lightSSpacePosNormalized * 0.5 + 0.5;
+			
+			vec4 data;
+			float visibility = 0.0;
+			if (i == 0) {
+				data = texture2D(shadowMap, lightUV);
+				if (data.r == 0.0)
+					visibility = VSM(shadowMap, lightUV, adaptDepth(length(lightSpacePos)));
+			}
+			else {
+				data = texture2D(shadowMap1, lightUV);
+				if (data.r == 0.0)
+					visibility = VSM(shadowMap1, lightUV, adaptDepth(length(lightSpacePos)));
+			}
+			
+			if (lightUV.x >= 0.0 && lightUV.x <= 1.0 && lightUV.y >= 0.0 && lightUV.y <= 1.0) {
+				vec3 excident = (
+					skyLight(n) +
+					phong(p, n, i) *
+					influence(lightSpacePosNormalized, lightsAngle[i]) *
+					attenuation(lightSpacePos, lightsAttenuation[i]) *
+					visibility *
+					vec3(1.0, 1.0, 1.0)
+				);
+				gl_FragColor += vec4(gamma(excident), 1.0);
+			}
 		}
 	}
+	else
+		gl_FragColor = vec4(0.2, 0.3, 0.4, 1.0);
 }

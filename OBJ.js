@@ -36,6 +36,9 @@ function loadOBJ(i, initObj, obj, mtl) {
 					shader.setUniform('matDiffuse', 'f', 1.0);
 					shader.setUniform('isTextured', 'i', child.saveMaterial.params.diffuseMap == null ? 0 : 1);
 					shader.setUniform('diffMap', 't', child.saveMaterial.params.diffuseMap);
+					shader.setUniform('matSpecularColor', 'v4', child.saveMaterial.params.specular);
+					shader.setUniform('matSpecular', 'f', 0.3);
+					shader.setUniform('shininess', 'f', 5.0);
 					shader.setUniform('previousModelMatrix', 'm4', child.previousModelMatrix);
 					child.setMaterial(shader.createMaterial());
 				}
