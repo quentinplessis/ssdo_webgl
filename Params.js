@@ -125,7 +125,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 
 	
 // Rendering
-	var MODE = 'shadows', ANIMATION = false;
+	var MODE = 'ssdo', ANIMATION = false;
 	var shadowMode = 0; // hardShadows
 
 	//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps
