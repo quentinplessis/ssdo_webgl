@@ -86,6 +86,12 @@ function initShaders() {
 	diffuseMapShader.loadShader('shaders/diffuseMap.frag', 'fragment');
 	diffuseTexture = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
 	diffuseTexture90 = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
+	
+	specularMapShader = new Shader();
+	specularMapShader.loadShader('shaders/texturedWorldCoords.vert', 'vertex');
+	specularMapShader.loadShader('shaders/specularMap.frag', 'fragment');
+	specularTexture = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
+	//specularTexture90 = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
 
 	//Second depth for depth peeling
 	secondDepthShader = new Shader();
@@ -111,9 +117,12 @@ function initShaders() {
 	// shadows
 	shadowsTexture = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
 	shadowsShader = new Shader();
-	shadowsShader.loadShader('shaders/worldCoords.vert', 'vertex');
+	shadowsShader.loadShader('shaders/texture.vert', 'vertex');
 	shadowsShader.loadShader('shaders/shadows.frag', 'fragment');
+	shadowsShader.setUniform('positionsBuffer', 't', coordsTexture);
 	shadowsShader.setUniform('diffuseTexture', 't', diffuseTexture);
+	shadowsShader.setUniform('specularTexture', 't', specularTexture);
+	shadowsShader.setUniform('normalsAndDepthBuffer', 't', normalsAndDepthTexture);
 	shadowsShader.setUniform('shadowMaps', 'vt', shadowMaps);
 	shadowsShader.setUniform('shadowMap', 't', shadowMaps[0]);
 	shadowsShader.setUniform('shadowMap1', 't', shadowMaps[1]);
@@ -128,7 +137,6 @@ function initShaders() {
 	shadowsShader.setUniform('lightNearFar', 'fv1', lightNearFar);
 	shadowsShader.setUniform('PI', 'f', Math.PI);
 	shadowsShader.setUniform('shadowMode', 'i', shadowMode);
-	shadowsShader.setUniform('texelSize', 'v2', texelSize);
 	
 	// depth-of-field
 	DOFBlurTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
@@ -326,6 +334,7 @@ function initScene() {
 	//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
 	var plane = new THREE.PlaneGeometry(renderingWidth, renderingHeight);
+	
 	// dof
 	dofScene = new THREE.Scene();
 	dofQuad = new THREE.Mesh(plane);
@@ -378,6 +387,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(rtTextures['expressive'], 'expressive');
 	displayManager.addSimpleTexture(rtTextures['diffuse'], 'diffuse');
 	displayManager.addSimpleTexture(diffuseTexture, 'diffuseMap');
+	displayManager.addSimpleTexture(specularTexture, 'specularMap');
 	displayManager.addCustomTextureShader(displayShadowMapShader, shadowMaps[0], 'shadowMap1');
 	displayManager.addCustomTextureShader(displayShadowMapShader, shadowMaps[1], 'shadowMap2');
 	displayManager.addSimpleTexture(shadowsTexture, 'shadows');

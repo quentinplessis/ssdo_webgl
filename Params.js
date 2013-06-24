@@ -40,6 +40,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var shaders = [], rtTextures = [];
 	var normalsAndDepthShader, normalsAndDepthTexture;
 	var diffuseMapShader, diffuseTexture;
+	var specularMapShader, specularTexture;
 	var materialShader, materialTexture;
 	var coordsShader, coordsTexture;
 	var secondDepthShader, secondDepthTexture;
@@ -63,7 +64,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var dofAuxTexture;
 
 // Motion blur
-	var mbIntensity = 1.0, mbSamples = 4.0;
+	var mbIntensity = 10.0, mbSamples = 25.0;
 	var velocityTexture, velocityShader, motionBlurTexture, motionBlurShader;
 	var previousCameraViewMatrix;
 
@@ -124,7 +125,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 
 	
 // Rendering
-	var MODE = 'ssdo', ANIMATION = false;
+	var MODE = 'shadows', ANIMATION = false;
 	var shadowMode = 0; // hardShadows
 
 	//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps

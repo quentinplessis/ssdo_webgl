@@ -192,6 +192,24 @@
 				}
 			}
 			
+			// specular map rendering
+			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') {
+				var i = objects.length;
+				while (i--) {
+					if (objects[i].composedObject)
+						objects[i].setShaderMaterial(specularMapShader);
+					else {
+						specularMapShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
+						specularMapShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
+						specularMapShader.setUniform('shininess', 'f', materials[i]['shininess']);
+						//specularMapShader.setUniform('isTextured', 'i', 0);
+						//specularMapShader.setUniform('texture', 't', materials[i]['texture']);
+						objects[i].setMaterial(specularMapShader.createMaterial());
+					}
+				}
+				renderer.render(scene, camera, specularTexture, true);
+			}
+			
 			// 3rd rendering : diffuse rendering with lights
 			if (MODE == 'all' || MODE == 'normal') {
 				var i = objects.length;
@@ -239,7 +257,7 @@
 			}
 			
 			// 6th rendering : computes 3D coords
-			if (MODE == 'all' || MODE == 'ssdo' || MODE == 'ssdo90' || MODE == 'ssao') {
+			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur' || MODE == 'ssdo' || MODE == 'ssdo90' || MODE == 'ssao') {
 				var i = objects.length;
 				while (i--)
 					objects[i].setMaterial(coordsShader.getMaterial());
@@ -292,22 +310,8 @@
 			
 			// Shadows
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') {
-				var i = objects.length;
-				while (i--) {
-					if (objects[i].composedObject) {
-						shadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
-						shadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
-						shadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
-						objects[i].setShaderMaterial(shadowsShader);
-					}
-					else {
-						shadowsShader.setUniform('matSpecular', 'f', materials[i]['matSpecular']);
-						shadowsShader.setUniform('shininess', 'f', materials[i]['shininess']);
-						shadowsShader.setUniform('matSpecularColor', 'v4', materials[i]['matSpecularColor']);
-						objects[i].setMaterial(shadowsShader.createMaterial());
-					}
-				}
-				renderer.render(scene, camera, shadowsTexture, true);
+				screenSpaceQuad.setMaterial(shadowsShader.createMaterial());
+				renderer.render(screenSpaceScene, cameraRTT, shadowsTexture, true);
 			}
 			
 			// Motion blur
