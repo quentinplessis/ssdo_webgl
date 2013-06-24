@@ -39,7 +39,7 @@ var FizzyText = function() {
 	this.rmax2 = rmax2;
 	this.bounceIntensity = bounceIntensity;
 	this.numberOfSamplesF = numberOfSamplesF;
-	this.enableMultipleViews = enableMultipleViews;
+	this.enableMultipleViews = (enableMultipleViews == 1) ? true : false;
 	//Blur
 	this.patchSizeF = patchSizeF;
 	this.sigma = sigma;
