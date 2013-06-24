@@ -36,6 +36,7 @@ uniform int numberOfSamples;
 uniform float numberOfSamplesF;
 uniform float rmax;
 uniform float bounceIntensity;
+uniform float bias;
 
 varying vec2 vUv;
 
@@ -43,7 +44,6 @@ uniform int enableMultipleViews;
 
 void main() 
 {
-	float bias = 0.01;
 	vec4 currentPos = texture2D(positionsBuffer, vUv);
 
 	if (currentPos.a == 0.0) // the current point is not in the background

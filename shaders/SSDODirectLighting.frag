@@ -32,8 +32,7 @@ uniform vec3 randomDirections[NUMBER_OF_SAMPLES_MAX];
 uniform int numberOfSamples;
 uniform float numberOfSamplesF;
 uniform float rmax;
-
-const float bias = 0.01;
+uniform float bias;
 
 //compute the incoming radiance coming to the sample
 vec4 computeRadiance(vec3 samplePosition)

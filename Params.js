@@ -71,6 +71,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var ssaoScene, ssaoQuad;
 	var ssaoOnlyShader, ssaoOnlyBuffer;
 	var ssaoDiffuseShader, ssaoDiffuseBuffer, ssaoBlurBuffer, ssaoBlurAuxBuffer;
+	var ssaoBias = 0.10;
 
 // SSDO
 	var randomTexture;
@@ -83,6 +84,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var patchSizeF = 25.0, sigma = 100.0;
 	var rmax1 = 1.0, rmax2 = 50.0;
 	var bounceIntensity = 5.0, numberOfSamplesF = 8.0;
+	var ssdoBias = 0.01;
 	
 	//SSDO Multiples views	
 	var enableMultipleViews = 0;

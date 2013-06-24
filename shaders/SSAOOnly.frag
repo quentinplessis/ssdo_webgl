@@ -21,10 +21,10 @@ uniform vec3 randomDirections[NUMBER_OF_SAMPLES_MAX];
 uniform int numberOfSamples;
 uniform float numberOfSamplesF;
 uniform float rmax;
+uniform float bias;
 
 void main() 
 {
-	float bias = 0.11;
 	vec4 currentPos = texture2D(positionsBuffer,vUv);
 	float visibilityFactor = 0.0;
 	
