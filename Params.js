@@ -88,7 +88,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var ssdoBias = 0.01;
 	
 	//SSDO Multiples views	
-	var enableMultipleViews = 0;
+	var enableMultipleViews = 1;
 	var directLightBuffer90, normalsAndDepthBuffer90, diffuseTexture90, coordsTexture90;
 
 // Scenes
@@ -127,7 +127,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 
 	
 // Rendering
-	var MODE = 'ssdo', ANIMATION = false;
+	var MODE = 'ssdo90', ANIMATION = false;
 	var shadowMode = 0; // hardShadows
 
 	//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps

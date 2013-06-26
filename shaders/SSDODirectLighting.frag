@@ -1,8 +1,13 @@
+/**SSDODirectLightingShader.frag
+* Last modified : 26/06/13
+* Computes the first pass (direct light) of the SSDO algorithm
+*/
+
 #ifdef GL_ES
 precision highp float;
 #endif
 
-#define NUMBER_OF_SAMPLES_MAX 32
+const int NUMBER_OF_SAMPLES_MAX = 32;
 
 // input buffers
 uniform sampler2D positionsBuffer;
@@ -34,7 +39,9 @@ uniform float numberOfSamplesF;
 uniform float rmax;
 uniform float bias;
 
-//compute the incoming radiance coming to the sample
+/**
+* Compute the incoming radiance coming to the sample.
+*/
 vec4 computeRadiance(vec3 samplePosition)
 {
 	vec4 incomingRadiance = vec4(0.0,0.0,0.0,0.0);
@@ -90,7 +97,7 @@ void main()
 		vec4 color = vec4(0.0,0.0,0.0,0.0);
 	
 		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
-		//Precompute only numberOfSamples directions in the half positive hemisphere
+		//Precompute only numberOfSamples directions in the half positive hemisphere (randomDirections vector)
 		//Add a random rotation (with normal axis)  when you put the direction in the normal space
 		//Result : less noise due to random numbers
 		vec3 vector = normalize(2.0*texture2D(randomTexture, vUv).xyz-1.0);

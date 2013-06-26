@@ -1,3 +1,9 @@
+/**
+*ssdoBlur.frag
+* Last modified : 26/06/13
+* Gaussian blur on ssdoBuffer 
+*/
+
 #ifdef GL_ES
 precision highp float;
 #endif

@@ -1,3 +1,7 @@
+/**SSAOOnly.frag
+* Last modified : 26/06/13
+* Compute the visibility factor with the SSAO algorithm.
+*/
 #ifdef GL_ES
 precision highp float;
 #endif
@@ -34,7 +38,7 @@ void main()
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
 	
 		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
-		//Precompute only numberOfSamples directions in the half positive hemisphere
+		//Precompute only numberOfSamples directions in the half positive hemisphere (randomDirections vector)
 		//Add a random rotation (with normal axis)  when you put the direction in the normal space
 		//Result : less noise due to random numbers
 		vec3 vector = normalize(2.0*texture2D(randomTexture, vUv).xyz -1.0);

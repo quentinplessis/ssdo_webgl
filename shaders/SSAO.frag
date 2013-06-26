@@ -1,3 +1,8 @@
+/**SSAO.frag
+* Last modified : 26/06/13
+* Add the diffuse color to the ambient occlusion
+*/
+
 #ifdef GL_ES
 precision highp float;
 #endif
