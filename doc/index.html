@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Documentation - WebGLScreen Space Effects</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+		<link href="css/main.css" rel="stylesheet">
+		<link href="css/bootstrap-responsive.css" rel="stylesheet">
+		<script src="lib/jquery-1.9.1.min.js"></script>
+		<script src="lib/bootstrap.min.js"></script>
+	</head>
+	<body>
+		<div class="container">
+			<div class="masthead">
+				<h1 class="muted">Documentation</h1>
+				<div class="navbar">
+					<div class="navbar-inner">
+						<div class="container">
+							<ul class="nav">
+								<li class="active"><a href="javascript:display('structure')">Structure</a></li>
+								<li><a href="javascript:display('ajouter')">Ajouter un shader personnalisé</a></li>
+							</ul>
+						</div>
+					</div>
+				</div><!-- /.navbar -->
+			</div>
+			<!-- Structure -->
+			<div id="structure" style="display: block;">
+				<h1 class="cTitle">Structure</h1><br/><br/>
+				<strong>Remarque : comme les shaders et les modèles sont chargés à partir de fichiers via AJAX, il semble nécessaire de lancer l'application à l'aide d'un serveur web (apache ...). Utiliser Wamp sous windows ou installer un lamp sous Linux.</strong><br/><br/>
+				Le projet est structuré en différents dossiers : 
+				<ul>
+					<li><strong>shaders/</strong> : contient les vertex shaders et les fragment shaders</li>
+					<li><strong>scenes/</strong> : contient les descriptions javascript des différentes scènes utilisées, avec pour chaque scène une description des objets, de la caméra et des lumières</li>
+					<li><strong>models/</strong> : contient les models (OFF et OBJ) utilisés dans les scènes</li>
+					<li><strong>lib/</strong> : contient les bibliothèques externes utilisées (jQuery, Prototype, three.js, Dat.gui ...)</li>
+					<li><strong>css/</strong> : contient les feuilles de style de la page web</li>
+					<li><strong>doc/</strong> : contient la présente documentation</li>
+				</ul>
+				<br/>
+				<h2>Point d'entrée du programme</h2>
+				Le fichier principal est le fichier <strong>index.php</strong> :
+				<ul>
+					<li>Le rendu WebGL sera affiché dans l'élément html div dont l'id est <em>container</em></li>
+					<li>Le script <strong>Param.js</strong> est chargé afin de déclarer toutes les variables globales du projet (shaders, textures ...). Sont notamment importantes les variables <strong>currentScene</strong> et <strong>MODE</strong> qui désignent respectivement la scène à charger (voir les fichiers scenes/...) et le mode à afficher (c'est-à-dire les différents rendus à effectuer).</li>
+					<li>Les différentes descriptions de scènes sont ensuite chargées (scenes/...)</li>
+					<li>
+						Les méthodes d'initialisation contenues dans <strong>Initialization.js</strong> sont lancées via la méthode <em>init()</em> :
+						<ul>
+							<li>création des caméras et du renderer WebGL de three.js</li>
+							<li>initialisation des lumières de la scène choisie</li>
+							<li>initialisation des shaders</li>
+							<li>initialisation des objets de la scène</li>
+							<li>initialisation du <strong>Display Manager</strong> (DisplayManager.js), qui permet de gérer l'affichage des différents rendus</li>
+							<li>initialisation de la caméra de la scène</li>
+						</ul>
+					</li>
+					<li>Le <strong>panneau de contrôle</strong> (Controls.js) est ensuite chargé, afin d'afficher une interface permettant de modifier de manière interactive les paramètres des différents shaders ...</li>
+					<li>La méthode <em>animate()</em> (contenue dans index.php) est enfin appelée afin d'appeler régulièrement la fonction de rendu <em>render()</em></li>
+					<li>La méthode <em>render()</em> permet d'effectuer les différents rendus de la scène suivant le <em>MODE</em> actuel (déclaré dans Params.js et modifiable en appuyant sur les touches du clavier, voir la méthode <em>keyDown()</em>)</li>
+				</ul><br/>
+				
+				<h2>Autres fichiers intéressants</h2>
+				<ul>
+					<li><strong>Shader.js</strong> : permet de créer simplement un couple (vertex shader, fragment shader) avec leurs uniforms et attributes</li>
+					<li><strong>Light.js</strong> : représente une lumière</li>
+					<li><strong>OFF.js</strong> et <strong>OBJ.js</strong> : permettent de charger des fichiers OFF et OBJ</li>
+					<li><strong>Random.js</strong> : permet de créer une texture de bruit</li>
+				</ul><br/>
+				
+				<h2>Variables importantes de Params.js</h2>
+				<ul>
+					<li><strong>renderingWidth</strong> et <strong>renderingHeight</strong> : définissent la résolution avec laquelle effectuer le rendu</li>
+					<li><strong>viewAngle</strong>, <strong>aspect</strong>, <strong>near</strong>, <strong>far</strong> : paramètres de la caméra</li>
+					<li><strong>camera</strong> : objet de three.js représentant la caméra</li>
+					<li><strong>scene</strong> : objet de three.js représentant la scène à rendre</li>
+					<li><strong>lights[]</strong> : objets de type Light représentant les lumières de la scène</li>
+					<li><strong>lightsXXX[]</strong> : paramètres des lumières</li>
+					<li><strong>objects[]</strong> : objets de la scène</li>
+					<li><strong>materials[]</strong> : material[i] contient la description du matériau de l'objet objects[i]</li>
+				</ul>
+			</div>
+			
+			<!-- Ajouter -->
+			<div id="ajouter" style="display: none;">
+				<h1 class="cTitle">Ajouter un shader personnalisé</h1><br/><br/>
+				Cette section est constituée d'un petit tutoriel permettant d'ajouter un shader personnalité au projet existant.
+				<br/><br/>
+				<h2>Création et initialisation du shader</h2>
+				Dans <strong>Params.js</strong> : créer une variable pour le shader et une variable pour la texture qui recevra le résultat du shader :
+				<div class="code">var exampleShader, exampleTexture;</div>
+				Dans la méthode <em>initShaders()</em> de <strong>Initialization.js</strong> : initialiser les deux variables précédentes :
+				<div class="code">
+					exampleShader = new Shader();<br/>
+					exampleShader.loadShader('shaders/example.vert', 'vertex');<br/>
+					exampleShader.loadShader('shaders/example.frag', 'fragment');<br/>
+					exampleTexture = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
+				</div>
+				A la suite, ajouter les uniforms indépendants des objets :
+				<div class="code">
+					exampleShader.setUniform('lightsPos', 'v3v', lightsPos);<br/>
+					exampleShader.setUniform('lightsColor', 'v4v', lightsColor);<br/>
+					exampleShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);<br/>
+				</div>
+				Pour le code des shaders, on pourra prendre à titre d'exemple : <br/>
+				<strong>example.vert</strong> : 
+				<div class="code">
+					#ifdef GL_ES<br/>
+					precision highp float;<br/>
+					#endif<br/>
+<br/>
+					varying vec4 worldPos;<br/>
+					varying vec3 worldNormal;<br/>
+<br/>
+					void main() {<br/>
+						worldPos = modelMatrix * vec4(position, 1.0);<br/>
+						worldNormal = normalize(mat3(modelMatrix) * normal);<br/>
+						<br/>
+						gl_Position = projectionMatrix * camSpacePos;<br/>
+					}
+				</div>
+				<strong>example.frag</strong> : 
+				<div class="code">
+					#ifdef GL_ES<br/>
+					precision highp float;<br/>
+					#endif<br/>
+<br/>
+					// Lights properties<br/>
+					uniform vec3 lightsPos[2];<br/>
+					uniform vec4 lightsColor[2];<br/>
+					uniform float lightsIntensity[2];<br/>
+<br/>
+					// Material properties<br/>
+					uniform float matDiffuse;<br/>
+					uniform vec4 matDiffuseColor;<br/>
+<br/>
+					// 3D point properties<br/>
+					varying vec4 worldPos;<br/>
+					varying vec3 worldNormal;<br/>
+<br/>
+					void main() {<br/>
+						gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);<br/>
+						<br/>
+						vec3 p = vec3(worldPos);<br/>
+						vec3 n = normalize(worldNormal);<br/>
+						vec3 v = normalize(cameraPosition - p);<br/>
+						<br/>
+						// for each light<br/>
+						for (int i = 0 ; i < 2 ; i++) {<br/>
+							vec3 l = normalize(lightsPos[i] - p);<br/>
+							float diffuse = max(dot(l, n), 0.0);<br/>
+							<br/>
+							gl_FragColor += diffuse * matDiffuse * matDiffuseColor * lightsColor[i] * lightsIntensity[i];<br/>
+						}<br/>
+					}
+				</div><br/>
+				<h2>Rendering</h2>
+				Dans <strong>Params.js</strong> : changer la valeur de <em>MODE</em> pour la mettre à <strong>"example"</strong>.<br/>
+				Dans la méthode <em>render()</em> de <strong>index.php</strong>, ajouter les uniforms dépendants des objets, et rendre la scène dans <em>exampleTexture</em> :
+				<div class="code">
+					if (MODE == 'example') {<br/>
+					var i = objects.length;<br/>
+					while (i--) {<br/>
+						if (objects[i].composedObject)<br/>
+							objects[i].setShaderMaterial(exampleShader);<br/>
+						else {<br/>
+							exampleShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);<br/>
+							exampleShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);<br/>
+							objects[i].setMaterial(exampleShader.createMaterial());<br/>
+						}<br/>
+					}<br/>
+					renderer.render(scene, camera, exampleTexture, true);<br/>
+				}
+				</div><br/>
+				<h2>Affichage du rendu</h2>
+				Dans la méthode <em>initDisplayManager()</em> de <strong>Initialization.js</strong>, demander au DisplayManager de prendre en compte le rendu que l'on vient d'effectuer (lui donner un nom, par exemple 'monrendu') :
+				<div class="code">
+					displayManager.addSimpleTexture(exampleTexture, 'monrendu');
+				</div>
+				Dans <strong>Params.js</strong>, indiquer les rendus à afficher pour le mode que l'on vient de créer ('example') :
+				<div class="code">
+					customDisplays['example'] = {cols: 1, rows: 1, names: ['monrendu']};
+				</div>
+				<br/>
+				Il suffit ensuite de lancer index.php à l'aide d'un serveur web (apache ...) pour admirer le résultat.
+			</div>
+			<hr>
+			<div class="footer">
+				<p>Quentin Plessis</p>
+			</div>
+		</div> <!-- /container -->
+		<script>
+			var currentV = 'structure';
+			function display(view) {
+				document.getElementById(currentV).style.display = 'none';
+				document.getElementById(view).style.display = 'block';
+				currentV = view;
+			}
+		</script>
+		<script src="lib/bootstrap-transition.js"></script>
+	</body>
+</html>

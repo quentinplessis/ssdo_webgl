@@ -37,6 +37,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	blankMaterial['texture'] = null;
 
 // Basic shaders
+	var geometryBufferShader, geometryBufferTexture;
 	var shaders = [], rtTextures = [];
 	var normalsAndDepthShader, normalsAndDepthTexture;
 	var diffuseMapShader, diffuseTexture;
@@ -46,11 +47,12 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	var secondDepthShader, secondDepthTexture;
 	var displayDepthShader, displayShadowMapShader, displayDepthNormalsShader;
 
-// Shadow maps
+// Shadow maps / shadows
 	var shadowMapsResolution = 64, shadowMapsFullResolution = 256, shadowMapsBlurSize = 4.0;
 	var shadowMaps = [], smScene;
 	var shadowMapAux, shadowMapAux2, shadowMapBlurShader, blurShadowMaps = false;
 	var shadowsShader, shadowsTexture;
+	var shadowsGShader;
 
 // Depth of field
 	var dofResolution = 256, focal = 80, fStop = 15, focusDistance = 380;
@@ -103,6 +105,9 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	
 	customDisplays['shadows'] = {cols: 2, rows: 2, 
 		names: ['shadowMap1', 'shadowMap2', 'shadows', 'phong']};
+		
+	customDisplays['shadowsG'] = {cols: 2, rows: 2, 
+		names: ['shadowMap1', 'shadowMap2', 'shadows', 'gb']};
 	
 	customDisplays['dof'] = {cols: 2, rows: 2, 
 		names: ['dofBlurAux', 'dofBlur', 'dofImage', 'shadows']};
@@ -125,7 +130,7 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 
 	
 // Rendering
-	var MODE = 'ssdo', ANIMATION = false;
+	var MODE = 'shadows', ANIMATION = false;
 	var shadowMode = 0; // hardShadows
 
 	//minFilter: THREE.LinearMipmapLinearFilter,  // we want mipmaps

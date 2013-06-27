@@ -46,6 +46,7 @@
 	<script src="scenes/SceneCornel.js"></script>
 	<script src="scenes/SceneSquirrel.js"></script>
 	<script src="scenes/SceneBird.js"></script>
+	<script src="scenes/SceneOasis.js"></script>
 	<script src="Initialization.js">// Initialization script, called by init()</script>
 	<script>
 		<?php
@@ -159,6 +160,24 @@
 		 * Rendering loop
 		 */
 		function render() {
+			/* DOES NOT WORK YET
+			// geometry buffer computing
+			if (MODE == 'all' || MODE == 'shadowsG') {
+				var i = objects.length;
+				while (i--) {
+					if (objects[i].composedObject)
+						objects[i].setShaderMaterial(geometryBufferShader);
+					else {
+						geometryBufferShader.setUniform('matDiffuse', 'f', materials[i]['matDiffuse']);
+						geometryBufferShader.setUniform('matDiffuseColor', 'v4', materials[i]['matDiffuseColor']);
+						geometryBufferShader.setUniform('isTextured', 'i', materials[i]['texture'] != null ? 1 : 0);
+						geometryBufferShader.setUniform('diffMap', 't', materials[i]['texture']);
+						objects[i].setMaterial(geometryBufferShader.createMaterial());
+					}
+				}
+				renderer.render(scene, camera, geometryBufferTexture, true);
+			}*/
+			
 			// 1st rendering : computes depth and normals
 			if (MODE == 'all' || MODE == 'normal' || MODE == 'shadows' || MODE == 'ssdo' || MODE == 'ssao' || MODE == 'ssdo90' || MODE == 'dof' || MODE == 'motionBlur') {
 				var i = objects.length;
@@ -289,13 +308,11 @@
 					while (i--) {
 						renderer.render(scene, lightsCameras[i], shadowMapAux, true);
 						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux);
-						//shadowMapBlurShader.setUniform('texelDirection', 'v2', horizontalTexel);
 						shadowMapBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(1.0 / shadowMapsFullResolution, 0.0));
 						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
 						renderer.render(smScene, cameraRTT, shadowMapAux2, true);
 						
 						shadowMapBlurShader.setUniform('shadowMap', 't', shadowMapAux2);
-						//shadowMapBlurShader.setUniform('texelDirection', 'v2', verticalTexel);
 						shadowMapBlurShader.setUniform('texelDirection', 'v2', new THREE.Vector2(0.0, 1.0 / shadowMapsFullResolution));
 						smQuad.setMaterial(shadowMapBlurShader.createMaterial());
 						renderer.render(smScene, cameraRTT, shadowMaps[i], true);
@@ -311,6 +328,10 @@
 			// Shadows
 			if (MODE == 'all' || MODE == 'shadows' || MODE == 'dof' || MODE == 'motionBlur') {
 				screenSpaceQuad.setMaterial(shadowsShader.createMaterial());
+				renderer.render(screenSpaceScene, cameraRTT, shadowsTexture, true);
+			}
+			if (MODE == 'all' || MODE == 'shadowsG') {
+				screenSpaceQuad.setMaterial(shadowsGShader.createMaterial());
 				renderer.render(screenSpaceScene, cameraRTT, shadowsTexture, true);
 			}
 			

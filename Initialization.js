@@ -53,6 +53,12 @@ function initShaders() {
 	shaders['diffuse'] = new DiffuseShader(lightsPos, lightsColor, lightsIntensity);
 	rtTextures['diffuse'] = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
 	
+	// geometry buffer
+	geometryBufferShader = new Shader();
+	geometryBufferShader.loadShader('shaders/texturedWorldCoords.vert', 'vertex');
+	geometryBufferShader.loadShader('shaders/geometryBuffer.frag', 'fragment');
+	geometryBufferTexture = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
+	
 	normalsAndDepthShader = new Shader();
 	normalsAndDepthShader.loadShader('shaders/default.vert', 'vertex');
 	normalsAndDepthShader.loadShader('shaders/computesNormalsDepth.frag', 'fragment');
@@ -137,6 +143,24 @@ function initShaders() {
 	shadowsShader.setUniform('lightNearFar', 'fv1', lightNearFar);
 	shadowsShader.setUniform('PI', 'f', Math.PI);
 	shadowsShader.setUniform('shadowMode', 'i', shadowMode);
+	
+	shadowsGShader = new Shader();
+	shadowsGShader.loadShader('shaders/texture.vert', 'vertex');
+	shadowsGShader.loadShader('shaders/shadowsG.frag', 'fragment');
+	shadowsGShader.setUniform('geometryBuffer', 't', geometryBufferTexture);
+	shadowsGShader.setUniform('shadowMap', 't', shadowMaps[0]);
+	shadowsGShader.setUniform('shadowMap1', 't', shadowMaps[1]);
+	shadowsGShader.setUniform('lightsView', 'm4v', lightsView);
+	shadowsGShader.setUniform('lightsProj', 'm4v', lightsProj);
+	shadowsGShader.setUniform('lightsPos', 'v3v', lightsPos);
+	shadowsGShader.setUniform('lightsColor', 'v4v', lightsColor);
+	shadowsGShader.setUniform('lightsIntensity', 'fv1', lightsIntensity);
+	shadowsGShader.setUniform('lightsAngle', 'fv1', lightsAngle);
+	shadowsGShader.setUniform('lightsAttenuation', 'fv1', lightsAttenuation);
+	shadowsGShader.setUniform('skyLightIntensity', 'f', skyLightIntensity);
+	shadowsGShader.setUniform('lightNearFar', 'fv1', lightNearFar);
+	shadowsGShader.setUniform('PI', 'f', Math.PI);
+	shadowsGShader.setUniform('shadowMode', 'i', shadowMode);
 	
 	// depth-of-field
 	DOFBlurTexture = new THREE.WebGLRenderTarget(dofResolution, dofResolution, options);
@@ -407,6 +431,7 @@ function initDisplayManager() {
 	displayManager.addSimpleTexture(motionBlurTexture, 'motionBlur');
 	displayManager.addSimpleTexture(diffuseTexture90, 'diffuse90');
 	displayManager.addSimpleTexture(directLightBuffer90, 'ssdoDirect90');
+	displayManager.addCustomTexture(geometryBufferTexture, 'shaders/displayGB.frag', 'gb');
 	displayManager.display(customDisplays[MODE]);
 }
 
