@@ -250,6 +250,7 @@ function initShaders() {
 	ssdoDirectLightingShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
 	ssdoDirectLightingShader.setUniform('randomDirections', 'v3v', randomDirections);
 	ssdoDirectLightingShader.setUniform('rmax', 'f', rmax1);
+	ssdoDirectLightingShader.setUniform('bias', 'f', ssdoBias);
 	
 	ssdoIndirectBounceBuffer = new THREE.WebGLRenderTarget(renderingWidth, renderingHeight, options);
 	ssdoIndirectBounceShader = new Shader();
@@ -281,6 +282,7 @@ function initShaders() {
 	ssdoIndirectBounceShader.setUniform('rmax', 'f', rmax2);
 	ssdoIndirectBounceShader.setUniform('bounceIntensity', 'f', bounceIntensity);
 	ssdoIndirectBounceShader.setUniform('enableMultipleViews', 'i', enableMultipleViews);
+	ssdoIndirectBounceShader.setUniform('bias', 'f', ssdoBias);
 	
 	ssdoBlurBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	ssdoBlurAuxBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
@@ -317,6 +319,7 @@ function initShaders() {
 	ssaoOnlyShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
 	ssaoOnlyShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
 	ssaoOnlyShader.setUniform('rmax', 'f', rmax1);
+	ssaoOnlyShader.setUniform('bias', 'f', ssaoBias);
 
 	ssaoDiffuseBuffer = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, options);
 	ssaoDiffuseShader = new Shader();

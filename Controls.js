@@ -38,6 +38,7 @@ var FizzyText = function() {
 	this.rmax1 = rmax1;
 	this.rmax2 = rmax2;
 	this.bounceIntensity = bounceIntensity;
+	this.ssdoBias = ssdoBias;
 	this.numberOfSamplesF = numberOfSamplesF;
 	this.enableMultipleViews = (enableMultipleViews == 1) ? true : false;
 	//Blur
@@ -247,18 +248,25 @@ function initControls(json) {
 		ssaoDiffuseShader.setUniform('rmax', 'f', rmax1);	
 		render();
 	});
-	ssdoFolder.add(text, 'rmax2', 0, 128).name("Rmax2").onChange(function(value) {
+	ssdoFolder.add(text, 'rmax2', 0, 768).name("Rmax2").onChange(function(value) {
 		rmax2 = value;
 		ssdoIndirectBounceShader.setUniform('rmax', 'f', rmax2);
+		render();
+	});
+
+	ssdoFolder.add(text, 'ssdoBias', 0, 1).name("bias").onChange(function(value) {
+		ssdoBias = value;
+		ssdoDirectLightingShader.setUniform('bias', 'f', ssdoBias);
+		ssdoIndirectBounceShader.setUniform('bias', 'f', ssdoBias);
 		render();
 	});
 
 	ssdoFolder.add(text, 'numberOfSamplesF', 0, 32).name("Samples").onChange(function(value) {
 		numberOfSamplesF = value;
 		numberOfSamples = Math.round(value);
-		ssdoDirectLightingShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
+		ssdoDirectLightingShader.setUniform('numberOfSamples', 'i', numberOfSamples);
 		ssdoDirectLightingShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
-		ssdoIndirectBounceShader.setUniform('numberOfSamples', 'i', Math.round(numberOfSamplesF));
+		ssdoIndirectBounceShader.setUniform('numberOfSamples', 'i', numberOfSamples);
 		ssdoIndirectBounceShader.setUniform('numberOfSamplesF', 'f', numberOfSamplesF);
 		render();
 	});

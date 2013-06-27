@@ -1,7 +1,12 @@
+/**SSDOIndirectBounceShader.frag
+* Last modified : 26/06/13
+* Computes the second pass (indirect light) of the SSDO algorithm
+*/
+
 #ifdef GL_ES
 precision highp float;
 #endif
-#define NUMBER_OF_SAMPLES_MAX 32
+const int NUMBER_OF_SAMPLES_MAX = 32;
 
 // input buffers
 uniform sampler2D directLightBuffer;
@@ -36,6 +41,7 @@ uniform int numberOfSamples;
 uniform float numberOfSamplesF;
 uniform float rmax;
 uniform float bounceIntensity;
+uniform float bias;
 
 varying vec2 vUv;
 
@@ -43,7 +49,6 @@ uniform int enableMultipleViews;
 
 void main() 
 {
-	float bias = 0.01;
 	vec4 currentPos = texture2D(positionsBuffer, vUv);
 
 	if (currentPos.a == 0.0) // the current point is not in the background
@@ -52,8 +57,9 @@ void main()
 		vec3 position = currentPos.xyz;
 		vec3 normal = normalize(texture2D(normalsAndDepthBuffer, vUv).xyz);
 		vec4 color = vec4(0.0,0.0,0.0,0.0);	
+
 		//John Chapman SSAO implementation : http://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
-		//Precompute only numberOfSamples directions in the half positive hemisphere
+		//Precompute only numberOfSamples directions in the half positive hemisphere (randomDirections vector)
 		//Add a random rotation (with normal axis)  when you put the direction in the normal space
 		//Result : less noise due to random numbers
 		vec3 vector = normalize(2.0*texture2D(randomTexture,  vUv).xyz-1.0);
@@ -120,8 +126,6 @@ void main()
 							if( normalSpaceSampleProjectionOnSurface.z >= 0.0) //Consider samples projections that are in the positive half space
 							{	
 								color += bounceIntensity * max(dot(-transmittanceDirection, normal),0.0)* directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
-							//Formula presented in the article
-							//	gl_FragColor += matDiffusion(gl_FragCoord.xy)* pow(rmax, 2.0)* max(dot(transmittanceDirection, sampleNormalOnSurface),0.0)* max(dot(transmittanceDirection, -normal), 0.0) * directLightingVector/(numberOfSamplesF* pow(distanceSenderReceiver,2.0));
 							}
 						}//End if verification second depth for depth peeling
 						else

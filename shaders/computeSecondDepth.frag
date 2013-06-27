@@ -1,3 +1,9 @@
+/**computeSecondDepth.frag
+* Last modified : 26/06/13
+* Compute the second level of depth for the depth peeling
+* The back face culling needs to be disabled
+*/
+
 #ifdef GL_ES
 precision highp float;
 #endif
