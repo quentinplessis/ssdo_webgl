@@ -139,6 +139,10 @@
 				MODE = 'motionBlur';
 				displayManager.display(customDisplays[MODE]);
 			}
+			else if (event.keyCode == 86) { // v
+				MODE = 'ssdo90';
+				displayManager.display(customDisplays[MODE]);
+			}
 			else if (event.keyCode == 37) { // left
 				if (!displayManager.previousView()) { MODE = 'all'; } render();
 			}

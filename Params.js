@@ -123,8 +123,8 @@ var renderingWidth = window.innerWidth, renderingHeight = window.innerHeight;
 	customDisplays['ssdo'] = {cols: 2, rows: 2, 
 		names: ['shadowMap1', 'ssdoDirect', 'ssdoIndirectBounce', 'ssdoFinal']};
 	
-	customDisplays['ssdo90'] = {cols: 2, rows: 2, 
-		names: ['ssdoFinal', 'diffuse90','ssdoDirect90']};
+	customDisplays['ssdo90'] = {cols: 2, rows: 1, 
+		names: ['ssdoFinal', 'ssdoDirect90']};
 
 	customDisplays['texture'] = {names: ['diffuseMap']};
 	
